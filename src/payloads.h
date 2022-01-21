@@ -16,6 +16,7 @@ extern void Payload5(int t, HDC hdcScreen);
 extern void Payload6(int t, HDC hdcScreen);
 extern void Payload7(int t, HDC hdcScreen);
 extern void Payload8(int t, HDC hdcScreen);
+extern void Payload9(int t, HDC hdcScreen);
 extern void AudioPayload();
 extern int RotateDC(HDC hdc, int Angle, POINT ptCenter);
 extern int random();

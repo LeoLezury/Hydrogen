@@ -17,5 +17,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgum
 	ExecutePayload(Payload6, PAYLOAD_TIME);
 	ExecutePayload(Payload7, PAYLOAD_TIME);
 	ExecutePayload(Payload8, PAYLOAD_TIME);
+	ExecutePayload(Payload9, PAYLOAD_TIME);
 	return 0;
 }
