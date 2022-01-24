@@ -85,8 +85,16 @@ void ExecuteAudioSequence(int nSamplesPerSec, int nSampleCount, AUDIO_SEQUENCE p
 	HeapFree(hHeap, 0, psSamples);
 }
 
-void AudioSequence(PAUDIO_SEQUENCE_PARAMS pAudioParams) {
+void ExecuteAudioSequenceParams(PAUDIO_SEQUENCE_PARAMS pAudioParams) {
 	ExecuteAudioSequence(pAudioParams->nSamplesPerSec, pAudioParams->nSampleCount, (AUDIO_SEQUENCE*)pAudioParams->pAudioSequence, (AUDIOSEQUENCE_OPERATION*)pAudioParams->pPreAudioOp, (AUDIOSEQUENCE_OPERATION*)pAudioParams->pPostAudioOp);
+}
+
+void AudioPayloadThread(AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM]) {
+	for (;;) {
+		for (int i = 0; i < AUDIO_NUM; i++) {
+			ExecuteAudioSequenceParams(&pAudioSequences[i]);
+		}
+	}
 }
 
 void AudioSequence1(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
@@ -117,6 +125,12 @@ void AudioSequence4(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
 	}
 }
 
+void AudioSequence5(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
+	for (INT t = 0; t < nSampleCount * 2; t++) {
+		BYTE bFreq = (BYTE)((t * (1 + (5 & t >> 10)) * (3 + (t >> 17 & 1 ? (2 ^ 2 & t >> 14) / 3 : 3 & (t >> 13) + 1)) >> (3 & t >> 9)) & (t & 4096 ? (t * (t ^ t % 9) | t >> 3) >> 1 : 255));
+		((BYTE*)psSamples)[t] = bFreq;
+	}
+}
 void ExecutePayload(TROJAN_PAYLOAD payload, int nTime) {
 	int dwStartTime = Time;
 	for (int i = 0; Time < (dwStartTime + nTime); i++) {
@@ -343,9 +357,7 @@ void ExecuteShader(TROJAN_SHADER shader, int nTime) {
 	for (int i = 0; Time < (dwStartTime + nTime); i++) {
 		hdcScreen = GetDC(NULL);
 		BitBlt(hdcTempScreen, 0, 0, szScreen.cx, szScreen.cy, hdcScreen, 0, 0, SRCCOPY);
-		for (int j = 0; j < szScreen.cx * szScreen.cy; j++) {
-			prgbPixels[j].rgb = shader(i, j, prgbPixels[j].rgb);
-		}
+		shader(i, szScreen.cx, szScreen.cy, prgbPixels);
 		BitBlt(hdcScreen, 0, 0, szScreen.cx, szScreen.cy, hdcTempScreen, 0, 0, SRCCOPY);
 		ReleaseDC(NULL, hdcScreen);
 		DeleteObject(hdcScreen);
@@ -356,41 +368,81 @@ void ExecuteShader(TROJAN_SHADER shader, int nTime) {
 	DeleteDC(hdcTempScreen);
 }
 
-COLORREF Shader1(int t, int num, COLORREF rgb) {
-	return (rgb * 2) % (RGB(255, 255, 255));
+void Shader1(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		prgbScreen[i].rgb = (prgbScreen[i].rgb * 2) % (RGB(255, 255, 255));
+	}
 }
 
-COLORREF Shader2(int t, int num, COLORREF rgb) {
-	int r = GetRValue(rgb);
-	int g = GetGValue(rgb);
-	int b = GetBValue(rgb);
-	return RGB((r + 100) % 256, ((r + g + b) / 4 + t) % 256, ((r + g + b) / 4 + num) % 256) % (RGB(255, 255, 255)) + t * 10;
+void Shader2(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		int r = GetRValue(prgbScreen[i].rgb);
+		int g = GetGValue(prgbScreen[i].rgb);
+		int b = GetBValue(prgbScreen[i].rgb);
+		prgbScreen[i].rgb = RGB((r + 100) % 256, ((r + g + b) / 4 + t) % 256, ((r + g + b) / 4 + i) % 256) % (RGB(255, 255, 255)) + t * 10;
+	}
 }
 
-COLORREF Shader3(int t, int num, COLORREF rgb) {
-	int r = GetRValue(rgb);
-	int g = GetGValue(rgb);
-	int b = GetBValue(rgb);
-	return (RGB((2 * r) % 256, (b + t) % 256, (g + num) % 256) + int(sqrt(num >> t / (r + 1))) / 10) % (RGB(255, 255, 255));
+void Shader3(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		int r = GetRValue(prgbScreen[i].rgb);
+		int g = GetGValue(prgbScreen[i].rgb);
+		int b = GetBValue(prgbScreen[i].rgb);
+		prgbScreen[i].rgb = (RGB((2 * r) % 256, (b + t) % 256, (g + i) % 256) + int(sqrt(i >> t / (r + 1))) / 10) % (RGB(255, 255, 255));
+	}
 }
 
-COLORREF Shader4(int t, int num, COLORREF rgb) {
-	int r = GetRValue(rgb);
-	int g = GetGValue(rgb);
-	int b = GetBValue(rgb);
-	return (RGB((r + g + b) / 3, (r + g + b) / 3, (r + g + b) / 3) + t - int(sqrt(num))) % (RGB(255, 255, 255));
+void Shader4(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		int r = GetRValue(prgbScreen[i].rgb);
+		int g = GetGValue(prgbScreen[i].rgb);
+		int b = GetBValue(prgbScreen[i].rgb);
+		prgbScreen[i].rgb = (RGB((r + g + b) / 3, (r + g + b) / 3, (r + g + b) / 3) + t - int(sqrt(i))) % (RGB(255, 255, 255));
+	}
 }
 
-COLORREF Shader5(int t, int num, COLORREF rgb) {
-	return (rgb - Xorshift32() % int(sqrt(num + 1))) % (RGB(255, 255, 255));
+void Shader5(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		prgbScreen[i].rgb = (prgbScreen[i].rgb - Xorshift32() % int(sqrt(i + 1))) % (RGB(255, 255, 255));
+	}
 }
 
-COLORREF Shader6(int t, int num, COLORREF rgb) {
-	return (t * num) % (RGB(255, 255, 255));
+void Shader6(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		int temp = prgbScreen[i].rgb;
+		prgbScreen[i].rgb = prgbScreen[i / 3].rgb;
+		prgbScreen[i / 3].rgb = temp;
+	}
 }
 
-COLORREF Shader7(int t, int num, COLORREF rgb) {
-	return (Xorshift32() % 0x100) * 0x010101;
+void Shader7(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		int randPixel = Xorshift32() % w;
+		int tempB = GetBValue(prgbScreen[i].rgb);
+		prgbScreen[i].rgb = RGB(GetBValue(prgbScreen[randPixel].rgb), GetBValue(prgbScreen[randPixel].rgb), GetBValue(prgbScreen[randPixel].rgb));
+		prgbScreen[randPixel].rgb = RGB(tempB, tempB, tempB);
+	}
+}
+
+void Shader8(int t, int w, int h, PRGBQUAD prgbScreen) {
+	t *= 10;
+	for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++) {
+			prgbScreen[i * j].rgb = RGB(i % 256, j % 256, t % 256);
+		}
+	}
+}
+
+void Shader9(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		prgbScreen[i].rgb = (t * i) % (RGB(255, 255, 255));
+	}
+}
+
+void Shader10(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		prgbScreen[i].rgb = (Xorshift32() % 0x100) * 0x010101;
+	}
 }
 
 BOOL CALLBACK EnumChildWindowsProc(HWND hwnd, LPARAM lParam) {

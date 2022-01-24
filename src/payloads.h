@@ -20,12 +20,13 @@ extern void ExecutePayload(TROJAN_PAYLOAD payload, int nTime);
 
 extern void ExecuteShader(TROJAN_SHADER shader, int nTime);
 
-extern void AudioSequence(PAUDIO_SEQUENCE_PARAMS pAudioParams);
+extern void AudioPayloadThread(AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM]);
 
 extern void AudioSequence1(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 extern void AudioSequence2(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 extern void AudioSequence3(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 extern void AudioSequence4(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
+extern void AudioSequence5(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 
 extern void Payload1(int t, HDC hdcScreen);
 extern void Payload2(int t, HDC hdcScreen);
@@ -37,10 +38,13 @@ extern void Payload7(int t, HDC hdcScreen);
 extern void Payload8(int t, HDC hdcScreen);
 extern void Payload9(int t, HDC hdcScreen);
 
-extern COLORREF Shader1(int t, int num, COLORREF rgb);
-extern COLORREF Shader2(int t, int num, COLORREF rgb);
-extern COLORREF Shader3(int t, int num, COLORREF rgb);
-extern COLORREF Shader4(int t, int num, COLORREF rgb);
-extern COLORREF Shader5(int t, int num, COLORREF rgb);
-extern COLORREF Shader6(int t, int num, COLORREF rgb);
-extern COLORREF Shader7(int t, int num, COLORREF rgb);
+extern void Shader1(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader2(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader3(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader4(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader5(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader6(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader7(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader8(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader9(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader10(int t, int w, int h, PRGBQUAD prgbScreen);
