@@ -27,6 +27,11 @@ extern void AudioSequence2(int nSamplesPerSec, int nSampleCount, PSHORT psSample
 extern void AudioSequence3(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 extern void AudioSequence4(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 extern void AudioSequence5(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
+extern void AudioSequence6(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
+extern void AudioSequence7(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
+extern void AudioSequence8(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
+extern void AudioSequence9(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
+extern void AudioSequence10(int nSamplesPerSec, int nSampleCount, PSHORT psSamples);
 
 extern void Payload1(int t, HDC hdcScreen);
 extern void Payload2(int t, HDC hdcScreen);

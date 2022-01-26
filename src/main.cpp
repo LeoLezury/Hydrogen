@@ -15,11 +15,16 @@ int WinMain(
 ) {
 
 	AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM] = {0};
-	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1};
-	pAudioSequences[1] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence2};
-	pAudioSequences[2] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence3};
-	pAudioSequences[3] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence4};
-	pAudioSequences[4] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence5};
+	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1 };
+	pAudioSequences[1] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence2 };
+	pAudioSequences[2] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence3 };
+	pAudioSequences[3] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence4 };
+	pAudioSequences[4] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence5 };
+	pAudioSequences[5] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence6 };
+	pAudioSequences[6] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence7 };
+	pAudioSequences[7] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence8 };
+	pAudioSequences[8] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence9 };
+	pAudioSequences[9] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence10 };
 
 	SeedXorshift32((DWORD)__rdtsc());
 

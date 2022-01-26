@@ -1,7 +1,7 @@
 #pragma once
 #include <Windows.h>
 #define PAYLOAD_TIME 10
-#define AUDIO_NUM 5
+#define AUDIO_NUM 10
 typedef union _RGBQUAD {
 	COLORREF rgb;
 	struct {
