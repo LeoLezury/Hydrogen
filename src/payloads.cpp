@@ -112,14 +112,14 @@ void AudioSequence3(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
 
 void AudioSequence4(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
 	for (INT t = 0; t < nSampleCount * 2; t++) {
-		BYTE bFreq = (BYTE)(((t >> 10) & 42) * t);
+		BYTE bFreq = (BYTE)((t & (t >> 7 | t >> 8 | t >> 16) ^ t) * t);
 		((BYTE*)psSamples)[t] = bFreq;
 	}
 }
 
 void AudioSequence5(int nSamplesPerSec, int nSampleCount, PSHORT psSamples) {
 	for (INT t = 0; t < nSampleCount * 2; t++) {
-		BYTE bFreq = (BYTE)((t * (1 + (5 & t >> 10)) * (3 + (t >> 17 & 1 ? (2 ^ 2 & t >> 14) / 3 : 3 & (t >> 13) + 1)) >> (3 & t >> 9)) & (t & 4096 ? (t * (t ^ t % 9) | t >> 3) >> 1 : 255));
+		BYTE bFreq = (BYTE)((t * t / (1 + (t >> 9 & t >> 8))) & 128);
 		((BYTE*)psSamples)[t] = bFreq;
 	}
 }
