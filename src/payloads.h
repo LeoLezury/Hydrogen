@@ -16,6 +16,8 @@ extern void WindowsCorruptionPayload();
 
 extern void MessageBoxPayload();
 
+extern void RandomExecutePayload();
+
 extern void ExecutePayload(TROJAN_PAYLOAD payload, int nTime);
 
 extern void ExecuteShader(TROJAN_SHADER shader, int nTime);
@@ -56,3 +58,4 @@ extern void Shader10(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader11(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader12(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader13(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader14(int t, int w, int h, PRGBQUAD prgbScreen);
