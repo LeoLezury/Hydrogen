@@ -44,6 +44,7 @@ extern void Payload6(int t, HDC hdcScreen);
 extern void Payload7(int t, HDC hdcScreen);
 extern void Payload8(int t, HDC hdcScreen);
 extern void Payload9(int t, HDC hdcScreen);
+extern void Payload10(int t, HDC hdcScreen);
 
 extern void Shader1(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader2(int t, int w, int h, PRGBQUAD prgbScreen);
@@ -59,3 +60,5 @@ extern void Shader11(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader12(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader13(int t, int w, int h, PRGBQUAD prgbScreen);
 extern void Shader14(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader15(int t, int w, int h, PRGBQUAD prgbScreen);
+extern void Shader16(int t, int w, int h, PRGBQUAD prgbScreen);
