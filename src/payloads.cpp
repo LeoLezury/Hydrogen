@@ -545,12 +545,12 @@ void Shader12(int t, int w, int h, PRGBQUAD prgbScreen) {
 	prgbTemp = prgbScreen;
 	for (int i = 0; i < h / 2; i++) {
 		for (int j = 0; j < w; j++) {
-			prgbScreen[i * w + j].rgb = (prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * (h / 2) * i - i * i))) % (w * h)].rgb * (t % 3 + 1)) % RGB(255, 255, 255);
+			prgbScreen[i * w + j].rgb = prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * (h / 2) * i - i * i))) % (w * h)].rgb;
 		}
 	}
 	for (int i = h / 2; i < h; i++) {
 		for (int j = 0; j < w; j++) {
-			prgbScreen[i * w + j].rgb = (prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * (h / 2) * i - i * i))) % (w * h)].rgb * (t % 3 + 1)) % RGB(255, 255, 255);
+			prgbScreen[i * w + j].rgb = prgbTemp[(int)((float)(i * w + j) + (float)sqrt((2 * (h / 2) * i - i * i))) % (w * h)].rgb;
 		}
 	}
 	Sleep(50);
