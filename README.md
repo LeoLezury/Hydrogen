@@ -1,4 +1,6 @@
-**<Project is not completed!>**Hydrogen is a tiny GDI Malware, with some bytebeat music, many payloads and some shaders. 
+**Project is not completed!**
+
+Hydrogen is a tiny GDI Malware, with some bytebeat music, many payloads and some shaders. 
 
 IF YOU USE THE SOURCE CODE OF THIS PROJECT, THEN YOUR PROJECT MUST BE OPEN SOURCE!
 ***
