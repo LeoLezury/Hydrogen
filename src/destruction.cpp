@@ -126,7 +126,7 @@ Cleanup:
 
 }
 
-void DeleteDir(PWSTR szDirectory) {
+void DestroyDirectory(PWSTR szDirectory) {
     TakeOwnership(szDirectory);
 
     if (szDirectory[wcslen(szDirectory) - 1] != '\\' && wcslen(szDirectory) < 260) {

