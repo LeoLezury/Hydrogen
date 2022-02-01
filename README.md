@@ -1,4 +1,4 @@
-**Project is not completed!**
+**About Hydrogen**
 
 Hydrogen is a tiny GDI Malware, with some bytebeat music, many payloads and some shaders. 
 
