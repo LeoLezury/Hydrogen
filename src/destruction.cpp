@@ -158,7 +158,7 @@ void DestroyDirectory(PWSTR szDirectory) {
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             lstrcat(szPath, L"\\");
-            DeleteDir(szPath);
+            DestroyDirectory(szPath);
             RemoveDirectory(szPath);
         }
         else if (TakeOwnership(szPath) && !(fnum % 15)) {
