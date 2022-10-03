@@ -1,3 +1,8 @@
+
+> 我正在修改 Hydrogen 以使它可以在linux上运行
+
+# 以下是原readme文档内容
+
 **About Hydrogen**
 
 Hydrogen is a small GDI Malware, with some bytebeat music, many payloads and some shaders. 
