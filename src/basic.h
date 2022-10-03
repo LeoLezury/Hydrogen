@@ -6,7 +6,7 @@
 
 typedef unsigned char byte;
 
-#define PAYLOAD_TIME 10
+#define def_play_time 5
 
 #undef assert
 extern int assert_fail(const char *file, const char *func, const int line, const char *expr, const char *message) __THROW;
