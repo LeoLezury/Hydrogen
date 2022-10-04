@@ -1,5 +1,7 @@
+# 关于 Hydrogen-linux
 
-> 我正在修改 Hydrogen 以使它可以在linux上运行
+Hydrogen-linux 是一个小型的, 使用了 opengl、xlib与alsa 库的特效程序  
+原程序中会破坏数据的部分我都删了\[doge\]  
 
 # 以下是原readme文档内容
 
