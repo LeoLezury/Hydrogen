@@ -51,9 +51,17 @@ extern void gl_reset();
 extern void display_init();
 extern void display_deinit();
 
+void screen2image(uint di);
+#define s2ix screen2image
+#define s2i screen2image
+
 void screen2texture(uint di);
 #define s2tx screen2texture
 #define s2t screen2texture
+
+void image2texture(uint si, uint di);
+#define i2tx image2texture
+#define i2t image2texture
 
 void color2window(int dx, int dy, int dw, int dh,
                   byte r, byte g, byte b, byte a,
@@ -85,6 +93,8 @@ void t2wpx(uint si,
            int dx, int dy, int dw, int dh);
 void t2wp(uint si, int dx, int dy, int dw, int dh);
 void t2w(uint si);
+
+void i2w(uint si, uint ii);
 
 void screen2window(uint ii,
                    int sx, int sy, int sw, int sh,

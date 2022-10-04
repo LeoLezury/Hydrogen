@@ -2,11 +2,22 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <math.h>
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
 #include "display.h"
+
+uint xs = 0b1011011001001011010101001010100010111101001010101;
+
+uint Xorshift32()
+{
+    xs ^= xs << 13;
+    xs ^= xs >> 17;
+    xs ^= xs << 5;
+    return xs;
+}
 
 void effect1(int idx)
 {
@@ -151,3 +162,166 @@ void effect9(int idx)
 //     DeleteObject(hcdc);
 //     DeleteObject(hBitmap);
 // }
+
+#define RGB(r, g, b) (((uint)(byte)(r)) | ((uint)(byte)(g) << 8) | ((uint)(byte)(b) << 16))
+#define RGB2BGRA(v) ((((uint)(v)&0xff) << 16) | ((uint)(v)&0xff00) | (((uint)(v)&0xff0000) >> 16) | 0xff000000)
+#define RGBset(v) (((uint *)data)[i] = RGB2BGRA(v))
+#define BGRAfrom(n) (((uint *)data)[n])
+
+#define r (data[i * 4 + 2])
+#define g (data[i * 4 + 1])
+#define b (data[i * 4])
+
+#define _shader_func_(name)    \
+    void shader##name(int idx) \
+    {                          \
+        s2i(0);                \
+        byte *data = img[0]->data;
+#define _shader_func_end_ \
+    i2w(0, 0);            \
+    }
+
+_shader_func_(1);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+    RGBset(RGB(r, g, b) * 3);
+_shader_func_end_;
+
+_shader_func_(2);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+    RGBset(RGB(r + 100, (r + g + b) / 4 + idx, (r + g + b) / 4 + i) + idx * 10);
+_shader_func_end_;
+
+_shader_func_(3);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    uint v = RGB(2 * r, b + idx, g + i) + (uint)sqrt(i >> idx / (r + 1)) / 10;
+    RGBset(v);
+}
+_shader_func_end_;
+
+_shader_func_(4);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    uint v = RGB((r + g + b) / 3, (r + g + b) / 3, (r + g + b) / 3) + idx - ((int)sqrt(i) & 0xffffff);
+    RGBset(v);
+}
+_shader_func_end_;
+
+_shader_func_(5);
+usleep(100e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    uint v = RGB(r, g, b) - Xorshift32() % ((uint)sqrt(i + 1) & 0xffffff);
+    RGBset(v);
+}
+_shader_func_end_;
+
+_shader_func_(6);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    uint temp = ((uint *)data)[i];
+    ((uint *)data)[i] = ((uint *)data)[i / 3];
+    ((uint *)data)[i / 3] = temp;
+}
+_shader_func_end_;
+
+_shader_func_(7);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    int randPixel = Xorshift32() % screen_w;
+    int tempB = b;
+    r = data[randPixel * 4];
+    g = data[randPixel * 4];
+    b = data[randPixel * 4];
+    ((uint *)data)[randPixel] = RGB2BGRA(RGB(tempB, tempB, tempB));
+}
+_shader_func_end_;
+
+_shader_func_(8);
+usleep(50e3);
+idx *= 10;
+for (int i = 0; i < screen_w * screen_h; i++)
+    ((uint *)data)[(i % screen_w) * (i / screen_w)] = RGB2BGRA(RGB(i % screen_w, i / screen_w, idx));
+_shader_func_end_;
+
+_shader_func_(9);
+usleep(50e3);
+idx *= 50;
+for (int i = 0; i < screen_w * screen_h; i++)
+    RGBset(RGB(r + i / screen_w / 10, g + i % screen_w / 10, b + idx));
+_shader_func_end_;
+
+_shader_func_(10);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    uint temp1 = (i / screen_w + Xorshift32() % 11 - 5);
+    uint temp2 = (i % screen_w + Xorshift32() % 11 - 5);
+    ((uint *)data)[i] = ((uint *)data)[(temp1 * screen_w + temp2) % (screen_w * screen_h)];
+}
+_shader_func_end_;
+
+_shader_func_(11);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+{
+    uint temp = ((uint *)data)[i];
+    ((uint *)data)[i] = ((uint *)data)[i / 3 * 2];
+    ((uint *)data)[i / 3 * 2] = temp;
+}
+_shader_func_end_;
+
+_shader_func_(12);
+usleep(50e3);
+for (int i = 0, x = 0, y = 0; y < screen_h; i++, ++x < screen_w ? 0 : (x = 0, ++y))
+{
+    uint a = (uint)(i + sqrt(y * (screen_h - y))) % (screen_w * screen_h);
+    BGRAfrom(i) = BGRAfrom(a);
+}
+_shader_func_end_;
+
+_shader_func_(13);
+usleep(100e3);
+for (int i = 0, x = 0, y = 0; y < screen_h; i++, ++x < screen_w ? 0 : (x = 0, ++y))
+{
+    uint a = (uint)(x * screen_w + y +
+                    sqrt(2 * screen_h * y - y * y)) %
+             (screen_w * screen_h);
+    BGRAfrom(i) = BGRAfrom(a);
+}
+_shader_func_end_;
+
+_shader_func_(14);
+usleep(100e3);
+for (int i = 0, x = 0, y = 0; y < screen_h; i++, ++x < screen_w ? 0 : (x = 0, ++y))
+{
+    uint a = (uint)(x * screen_w + y +
+                    sqrt(2 * screen_h * x - x * x)) %
+             (screen_w * screen_h);
+    BGRAfrom(i) = BGRAfrom(a);
+}
+_shader_func_end_;
+
+_shader_func_(15);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+    RGBset(idx *i);
+_shader_func_end_;
+
+_shader_func_(16);
+usleep(50e3);
+for (int i = 0; i < screen_w * screen_h; i++)
+    RGBset((Xorshift32() & 0xff) * 0x010101);
+_shader_func_end_;
+
+// #endif
+
+#undef r
+#undef g
+#undef b

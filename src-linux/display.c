@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 #include <pthread.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -130,6 +131,28 @@ void display_deinit()
 {
 }
 
+// 屏幕到图片
+void screen2image(uint di)
+{
+    if (img[di])
+        if (img[di]->w * img[di]->h * _img_format_size[img[di]->format] < screen_w * screen_h * 4)
+        {
+            img_free(img[di]);
+            img[di] = NULL;
+        }
+        else
+        {
+            img[di]->w = screen_w;
+            img[di]->h = screen_h;
+            img[di]->format = img_format_BGRA;
+        }
+    if (!img[di])
+        img[di] = img_new(img_format_BGRA, screen_w, screen_h);
+
+    XShmGetImage(display, root_window, image, 0, 0, AllPlanes);
+    memcpy(img[di]->data, image->data, screen_w * screen_h * 4);
+}
+
 // 复制屏幕到纹理
 void screen2texture(uint di)
 {
@@ -138,6 +161,13 @@ void screen2texture(uint di)
     // XMapWindow(display, window);
     // 加载到纹理
     tex_load(tex + di % tex_num, image->data, screen_w, screen_h, GL_RGBA, GL_BGRA);
+}
+
+// 图片到纹理
+void image2texture(uint si, uint di)
+{
+    if (img[si])
+        tex_load(tex + di % tex_num, img[si]->data, img[si]->w, img[si]->h, GL_RGBA, _img_format_to_gl[img[si]->format]);
 }
 
 // 颜色到窗口
@@ -283,6 +313,12 @@ void t2wpx(uint si,
 void t2wp(uint si, int dx, int dy, int dw, int dh) { t2wpx(si, 0, 0, 0, 0, dx, dy, dw, dh); }
 void t2w(uint si) { t2wcx(si, 255, 255, 255, 255, 0); }
 
+void i2w(uint si, uint ii)
+{
+    i2t(si, ii);
+    t2w(ii);
+}
+
 // 屏幕到窗口
 void screen2window(uint ii,
                    int sx, int sy, int sw, int sh,
@@ -328,15 +364,17 @@ void s2w(uint ii) { s2wcx(ii, 255, 255, 255, 255, 0); }
 void exec_effect(effect_init_t init, effect_t func, float time)
 {
     s2w0();
+    // XRaiseWindow(display, window);
     if (init)
         init();
-    float starttime = gettimef();
-    for (int i = 0; gettimef() - starttime < time; i++)
+    double endtime = gettimed() + time;
+    for (int i = 0; gettimed() < endtime; i++)
     {
         func(i);
         glFlush();
     }
     gl_reset();
+    // XLowerWindow(display, window);
     glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
     usleep(100e3);

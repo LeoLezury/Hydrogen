@@ -32,7 +32,6 @@ int main(int argc, char **argv)
     start_audio_thread(pcm_gen_funcs);
 
     exec_effect(NULL, effect1, def_play_time);
-    assert(0);
     exec_effect(NULL, effect2, def_play_time);
     exec_effect(NULL, effect3, def_play_time);
     exec_effect(NULL, effect4, def_play_time);
@@ -43,22 +42,22 @@ int main(int argc, char **argv)
     exec_effect(effect9_init, effect9, def_play_time);
     // exec_effect(NULL,effect10);
 
-    // ExecuteShader(Shader1, def_play_time);
-    // ExecuteShader(Shader2, def_play_time);
-    // ExecuteShader(Shader3, def_play_time);
-    // ExecuteShader(Shader4, def_play_time);
-    // ExecuteShader(Shader5, def_play_time);
-    // ExecuteShader(Shader6, def_play_time);
-    // ExecuteShader(Shader7, def_play_time);
-    // ExecuteShader(Shader8, def_play_time);
-    // ExecuteShader(Shader9, def_play_time);
-    // ExecuteShader(Shader10, def_play_time);
-    // ExecuteShader(Shader11, def_play_time);
-    // ExecuteShader(Shader12, def_play_time);
-    // ExecuteShader(Shader13, def_play_time);
-    // ExecuteShader(Shader14, def_play_time);
-    // ExecuteShader(Shader15, def_play_time);
-    // ExecuteShader(Shader16, def_play_time);
+    exec_effect(NULL, shader1, def_play_time);
+    exec_effect(NULL, shader2, def_play_time);
+    exec_effect(NULL, shader3, def_play_time);
+    exec_effect(NULL, shader4, def_play_time);
+    exec_effect(NULL, shader5, def_play_time);
+    exec_effect(NULL, shader6, def_play_time);
+    exec_effect(NULL, shader7, def_play_time);
+    exec_effect(NULL, shader8, def_play_time);
+    exec_effect(NULL, shader9, def_play_time);
+    exec_effect(NULL, shader10, def_play_time);
+    exec_effect(NULL, shader11, def_play_time);
+    exec_effect(NULL, shader12, def_play_time);
+    exec_effect(NULL, shader13, def_play_time);
+    exec_effect(NULL, shader14, def_play_time);
+    exec_effect(NULL, shader15, def_play_time);
+    exec_effect(NULL, shader16, def_play_time);
 
     // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptioneffect), NULL, 0, NULL);
     // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(FileMesseffect), (PVOID)SystemDirectory, 0, NULL);

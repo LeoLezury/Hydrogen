@@ -39,7 +39,11 @@ echo -e "\e[38;2;0;0;255m# gcc <xxx> -o ./main\e[0m"
 gcc -o ../main\
   ./main.o ./effects.o ./display.o ./texture.o ./image.o\
   ./pcm-gen.o ./audio.o ./basic.o\
-  -lGL -lGLX -lX11 -lXfixes -lXext -lasound -lstb
+  -lGL -lGLX -lX11 -lXfixes -lXext -lasound -lstb -lm
+echo -e "\e[38;2;0;0;255m# gcc <xxx> -o ./hope解说-temp-audio\e[0m"
+gcc -o ../hope解说-temp-audio\
+  ./hope解说-temp-audio.o\
+  -lasound -lm
 
 # gcc ./main.c ./basic.c -o ./main -lGL -lGLX -lX11 -lXfixes -lXext
 echo -e '\e[38;2;0;192;128m构建完成\e[30m'
