@@ -2,9 +2,12 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+#include <pthread.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 #include <GL/glx.h>
 
@@ -14,7 +17,7 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/XShm.h>
 
-#include "basic.h"
+#include "display.h"
 
 // xlib上下文
 Display *display;
@@ -28,14 +31,12 @@ XShmSegmentInfo xshmInfo;
 XImage *image;
 
 // opengl上下文
-#define tex_num 8
 GLXContext glx_ctx;
-uint tex[tex_num];
-
-// GLXContext glx_root_ctx;
-
+_tex_t tex[tex_num];
 uint gl_tex_to_window;
 uint gl_color_to_window;
+
+img_t img[img_num];
 
 // 还原gl状态
 void gl_reset()
@@ -94,19 +95,7 @@ void display_init()
     assert(glx_ctx = glXCreateContext(display, &vinfo, NULL, 1), "创建opengl上下文失败");
     assert(glXMakeCurrent(display, window, glx_ctx), "设置当前opengl上下文失败");
     // 创建纹理
-    float color[4] = {0, 0, 0, 0};
-    glEnable(GL_TEXTURE_2D);
-    glGenTextures(tex_num, tex);
-    for (int i = 0; i < tex_num; i++)
-    {
-        glBindTexture(GL_TEXTURE_2D, tex[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
-    }
+    tex_gen(tex, tex_num);
     //
     gl_reset();
 
@@ -137,20 +126,19 @@ void display_init()
     glEnd();
     glEndList();
 }
+void display_deinit()
+{
+}
 
-// 复制屏幕到图片
-void screen2image(uint di)
+// 复制屏幕到纹理
+void screen2texture(uint di)
 {
     // XUnmapWindow(display, window);
     XShmGetImage(display, root_window, image, 0, 0, AllPlanes);
     // XMapWindow(display, window);
     // 加载到纹理
-    glBindTexture(GL_TEXTURE_2D, tex[di % tex_num]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screen_w, screen_h, 0, GL_BGRA, GL_UNSIGNED_BYTE, image->data);
-    glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);
+    tex_load(tex + di % tex_num, image->data, screen_w, screen_h, GL_RGBA, GL_BGRA);
 }
-void s2ix(uint di) { screen2image(di); }
-void s2i(uint di) { screen2image(di); }
 
 // 颜色到窗口
 void color2window(int dx, int dy, int dw, int dh,
@@ -222,12 +210,12 @@ void a2w(byte a)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-// 图片到窗口
-void image2window(uint si,
-                  int sx, int sy, int sw, int sh,
-                  int dx, int dy, int dw, int dh,
-                  byte r, byte g, byte b, byte a,
-                  uint op)
+// 纹理到窗口
+void texture2window(uint si,
+                    int sx, int sy, int sw, int sh,
+                    int dx, int dy, int dw, int dh,
+                    byte r, byte g, byte b, byte a,
+                    uint op)
 {
     if (op)
     {
@@ -244,7 +232,7 @@ void image2window(uint si,
         dh = screen_h;
 
     glColor4f(r / 255., g / 255., b / 255., a / 255.);
-    glBindTexture(GL_TEXTURE_2D, tex[si]);
+    glBindTexture(GL_TEXTURE_2D, tex[si].id);
     glBegin(GL_QUADS);
     glTexCoord2f(sx / (float)screen_w, sy / (float)screen_h);
     glVertex2f(dx, dy);
@@ -260,14 +248,14 @@ void image2window(uint si,
     if (op)
         glDisable(GL_COLOR_LOGIC_OP);
 }
-void i2wx(uint si,
+void t2wx(uint si,
           int dx, int dy, int dw, int dh,
-          byte r, byte g, byte b, byte a) { image2window(si,
-                                                         0, 0, 0, 0,
-                                                         dx, dy, dw, dh,
-                                                         r, g, b, a,
-                                                         0); }
-void i2wcx(uint si, byte r, byte g, byte b, byte a, uint op)
+          byte r, byte g, byte b, byte a) { texture2window(si,
+                                                           0, 0, 0, 0,
+                                                           dx, dy, dw, dh,
+                                                           r, g, b, a,
+                                                           0); }
+void t2wcx(uint si, byte r, byte g, byte b, byte a, uint op)
 {
     if (op)
     {
@@ -276,24 +264,24 @@ void i2wcx(uint si, byte r, byte g, byte b, byte a, uint op)
     }
 
     glColor4f(r / 255., g / 255., b / 255., a / 255.);
-    glBindTexture(GL_TEXTURE_2D, tex[si]);
+    glBindTexture(GL_TEXTURE_2D, tex[si].id);
     glCallList(gl_tex_to_window);
     glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);
 
     if (op)
         glDisable(GL_COLOR_LOGIC_OP);
 }
-void i2wca(uint si, byte r, byte g, byte b, byte a) { i2wcx(si, r, g, b, a, 0); }
-void i2wc(uint si, byte r, byte g, byte b) { i2wcx(si, r, g, b, 255, 0); }
-void i2wpx(uint si,
+void t2wca(uint si, byte r, byte g, byte b, byte a) { t2wcx(si, r, g, b, a, 0); }
+void t2wc(uint si, byte r, byte g, byte b) { t2wcx(si, r, g, b, 255, 0); }
+void t2wpx(uint si,
            int sx, int sy, int sw, int sh,
-           int dx, int dy, int dw, int dh) { image2window(si,
-                                                          sx, sy, sw, sh,
-                                                          dx, dy, dw, dh,
-                                                          255, 255, 255, 255,
-                                                          0); }
-void i2wp(uint si, int dx, int dy, int dw, int dh) { i2wpx(si, 0, 0, 0, 0, dx, dy, dw, dh); }
-void i2w(uint si) { i2wcx(si, 255, 255, 255, 255, 0); }
+           int dx, int dy, int dw, int dh) { texture2window(si,
+                                                            sx, sy, sw, sh,
+                                                            dx, dy, dw, dh,
+                                                            255, 255, 255, 255,
+                                                            0); }
+void t2wp(uint si, int dx, int dy, int dw, int dh) { t2wpx(si, 0, 0, 0, 0, dx, dy, dw, dh); }
+void t2w(uint si) { t2wcx(si, 255, 255, 255, 255, 0); }
 
 // 屏幕到窗口
 void screen2window(uint ii,
@@ -302,19 +290,19 @@ void screen2window(uint ii,
                    byte r, byte g, byte b, byte a,
                    uint op)
 {
-    s2i(ii);
-    image2window(ii,
-                 sx, sy, sw, sh,
-                 dx, dy, dw, dh,
-                 r, g, b, a,
-                 op);
+    s2t(ii);
+    texture2window(ii,
+                   sx, sy, sw, sh,
+                   dx, dy, dw, dh,
+                   r, g, b, a,
+                   op);
 }
 void s2wx(uint ii,
           int dx, int dy, int dw, int dh,
           byte r, byte g, byte b, byte a)
 {
-    s2i(ii);
-    i2wx(ii,
+    s2t(ii);
+    t2wx(ii,
          dx, dy, dw, dh,
          r, g, b, a);
 }
@@ -322,195 +310,80 @@ void s2wpx(uint ii,
            int sx, int sy, int sw, int sh,
            int dx, int dy, int dw, int dh)
 {
-    s2i(ii);
-    i2wpx(ii,
+    s2t(ii);
+    t2wpx(ii,
           sx, sy, sw, sh,
           dx, dy, dw, dh);
 }
 void s2wp(uint ii, int dx, int dy, int dw, int dh) { s2wpx(ii, 0, 0, 0, 0, dx, dy, dw, dh); }
 void s2wcx(uint ii, byte r, byte g, byte b, byte a, uint op)
 {
-    s2i(ii);
-    i2wcx(ii, r, g, b, a, op);
+    s2t(ii);
+    t2wcx(ii, r, g, b, a, op);
 }
 void s2wca(uint ii, byte r, byte g, byte b, byte a) { s2wcx(ii, r, g, b, a, 0); }
 void s2wc(uint ii, byte r, byte g, byte b) { s2wcx(ii, r, g, b, 255, 0); }
 void s2w(uint ii) { s2wcx(ii, 255, 255, 255, 255, 0); }
-void s2w0() { s2w(0); }
 
-// 特效部分
-
-void do_Payload(void (*init)(), void (*func)(int))
+void exec_effect(effect_init_t init, effect_t func, float time)
 {
     s2w0();
-
     if (init)
         init();
-
-    time_t starttime = time(NULL);
-    for (int i = 0; time(NULL) - starttime < def_play_time; i++)
+    float starttime = gettimef();
+    for (int i = 0; gettimef() - starttime < time; i++)
     {
         func(i);
-
-        glFlush(); // 刷新
+        glFlush();
     }
-    // 还原gl状态
     gl_reset();
     glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
-
     usleep(100e3);
 }
 
-void Payload1(int idx)
+void *display_thread(struct effect_data *data)
 {
-    usleep(15e3);
-    s2w(0);
-    c2wx(idx % 256, (idx / 2) % 256, (idx / 2), 0, GL_XOR);
-}
+    // pthread_detach(pthread_self());
 
-void Payload2(int idx)
-{
-    usleep(15e3);
-    s2wpx(0,
-          (idx * 10) % screen_w, (idx * 10) % screen_h, 0, 0,
-          0, 0, 0, 0);
-    color2window((idx * 10) % screen_w, (idx * 10) % screen_h, 0, 0,
-                 rand() % 256, rand() % 256, rand() % 256, 0, GL_XOR);
-}
+    display_init();
 
-void Payload3(int idx)
-{
-    usleep(100e3);
-    s2i(0);
-    for (int i = 0; i <= screen_w / 10; i++)
-        for (int j = 0; j <= screen_h / 10; j++)
-        {
-            i2wpx(0,
-                  i * 10, j * 10, 1, 1,
-                  i * 10, j * 10, 10, 10);
-        }
-}
-
-void Payload4(int idx)
-{
-    usleep(20e3);
-    s2wx(0,
-         idx % 200 + 10, -idx % 25, 0, 0,
-         255, 255, 255, 128);
-    alpha2window(idx % 200 + 10, -idx % 25, 0, 0, 255);
-}
-
-void Payload5(int idx)
-{
-    idx *= 3;
-    int x = rand() % screen_w, y = rand() % screen_h;
-    int w = idx % screen_w, h = idx % screen_h;
-    screen2window(0,
-                  x, y, w, h,
-                  (x + idx / 2) % screen_w, y % screen_h, w, h,
-                  255, 255, 255, 255, 0);
-}
-
-void Payload6_init()
-{
-    glTranslatef(screen_w / 2., screen_h / 2., 0);
-    glRotatef(1, 0, 0, 1);
-    glTranslatef(-screen_w / 2., -screen_h / 2., 0);
-}
-void Payload6(int idx)
-{
-    usleep(50e3);
-    s2wca(0, 255, 255, 255, 128);
-    a2w(255);
-}
-
-void Payload7(int idx)
-{
-    usleep(50e3);
-    glPushMatrix();
-    glTranslatef(screen_w / 2., screen_h / 2., 0);
-    glRotatef((4 - idx * 131 % 9) / 5., 0, 0, 1);
-    glTranslatef(-screen_w / 2., -screen_h / 2., 0);
-    // 文本输出有点麻烦, 暂时不搞
-    // SetBkColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
-    // SetTextColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
-    // TextOut(hdcScreen, random() % screen_w, random() % screen_h, L"HYDROGEN", 8);
-    s2wca(0, 255, 255, 255, 128);
-    glPopMatrix();
-    a2w(255);
-}
-
-void Payload8_init()
-{
-    float mView[16];
-    glGetFloatv(GL_MODELVIEW_MATRIX, mView);
-    mView[1] = mView[5] * .02;
-    glLoadMatrixf(mView);
-}
-void Payload8(int idx)
-{
-    usleep(50e3);
-    // SetBkColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
-    // SetTextColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
-    // for (int i = 0; i < 5; i++)
-    //     TextOut(hdcScreen, random() % screen_w, random() % screen_h, L"ӉӬլҏ ӎӬ !!!", 11);
-    s2wca(0, 255, 255, 255, 128);
-    a2w(255);
-}
-
-void Payload9_init()
-{
-    float mView[16];
-    glGetFloatv(GL_MODELVIEW_MATRIX, mView);
-    mView[4] = mView[0] * .02;
-    mView[12] += mView[4] * -(screen_h / 2);
-    glLoadMatrixf(mView);
-}
-void Payload9(int idx)
-{
-    usleep(50e3);
-    s2wca(0, 255, 255, 255, 128);
-    a2w(255);
-    c2wx(rand() % 256, rand() % 256, rand() % 256, 0, GL_XOR);
-}
-
-#if 0
-
-void Payload10(int idx)
-{
-    POINT ptScreen = GetVirtualScreenPos();
-    SIZE szScreen = GetVirtualScreenSize();
-
-    idx *= 30;
-
-    RedrawWindow(NULL, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
-
-    HDC hcdc = CreateCompatibleDC(hdcScreen);
-    HBITMAP hBitmap = CreateCompatibleBitmap(hdcScreen, screen_w, screen_h);
-    SelectObject(hcdc, hBitmap);
-    Sleep(50);
-    BitBlt(hcdc, 0, 0, screen_w, screen_h, hdcScreen, 0, 0, NOTSRCCOPY);
-    SelectObject(hdcScreen, CreatePatternBrush(hBitmap));
-
-    Ellipse(hdcScreen, idx % screen_w + 20, idx % screen_h + 20, idx % screen_w + idx % 101 + 180, idx % screen_h + idx % 101 + 180);
-    BitBlt(hcdc, 0, 0, screen_w, screen_h, hdcScreen, 0, 0, NOTSRCCOPY);
-    SelectObject(hdcScreen, CreatePatternBrush(hBitmap));
-    Ellipse(hdcScreen, idx % screen_w + 10, idx % screen_h + 10, idx % screen_w + idx % 101 + 190, idx % screen_h + idx % 101 + 190);
-    Ellipse(hdcScreen, idx % screen_w, idx % screen_h, idx % screen_w + idx % 101 + 200, idx % screen_h + idx % 101 + 200);
-    BitBlt(hcdc, 0, 0, screen_w, screen_h, hdcScreen, 0, 0, NOTSRCCOPY);
-    SelectObject(hdcScreen, CreatePatternBrush(hBitmap));
-    Ellipse(hdcScreen, idx % screen_w, idx % screen_h, idx % screen_w + idx % 101 + 200, idx % screen_h + idx % 101 + 200);
-
-    SetBkColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
-    SetTextColor(hdcScreen, RGB(random() % 256, random() % 256, random() % 256));
-
-    for (int i = 0; i < 5; i++)
+    effect_t func;
+play:
+    for (int i = 0; func = data[i].func; i++)
     {
-        TextOut(hdcScreen, random() % screen_w, random() % screen_h, L"     ", 5);
+        s2w0();
+        if (data[i].init)
+            data[i].init();
+        if (!(data[i].time > 0))
+            goto loop;
+        float starttime = gettime() / 1e9;
+        for (int i = 0; gettime() / 1e9 - starttime < data[i].time; i++)
+        {
+            func(i);
+            glFlush();
+        }
+        gl_reset();
+        glClear(GL_COLOR_BUFFER_BIT);
+        glFlush();
+        usleep(100e3);
+    }
+    goto play;
+    goto end;
+
+loop:
+    for (int i = 0;; i++)
+    {
+        func(i);
+        glFlush();
     }
 
-    DeleteObject(hcdc);
-    DeleteObject(hBitmap);
+end:
+    display_deinit();
 }
-#endif
+pthread_t start_display_thread(struct effect_data *data)
+{
+    pthread_t t;
+    pthread_create(&t, NULL, (void *(*)(void *))display_thread, data);
+    return t;
+}

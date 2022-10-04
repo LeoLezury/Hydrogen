@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include <pthread.h>
-#include <time.h>
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -20,6 +19,9 @@
 #include "audio.h"
 #include "display.h"
 
+#include "pcm-gen.h"
+#include "effects.h"
+
 int main(int argc, char **argv)
 {
 
@@ -29,16 +31,17 @@ int main(int argc, char **argv)
 
     start_audio_thread(pcm_gen_funcs);
 
-    do_Payload(NULL, Payload1);
-    do_Payload(NULL, Payload2);
-    do_Payload(NULL, Payload3);
-    do_Payload(NULL, Payload4);
-    do_Payload(NULL, Payload5);
-    do_Payload(Payload6_init, Payload6);
-    do_Payload(NULL, Payload7);
-    do_Payload(Payload8_init, Payload8);
-    do_Payload(Payload9_init, Payload9);
-    // do_Payload(NULL,Payload10);
+    exec_effect(NULL, effect1, def_play_time);
+    assert(0);
+    exec_effect(NULL, effect2, def_play_time);
+    exec_effect(NULL, effect3, def_play_time);
+    exec_effect(NULL, effect4, def_play_time);
+    exec_effect(NULL, effect5, def_play_time);
+    exec_effect(effect6_init, effect6, def_play_time);
+    exec_effect(NULL, effect7, def_play_time);
+    exec_effect(effect8_init, effect8, def_play_time);
+    exec_effect(effect9_init, effect9, def_play_time);
+    // exec_effect(NULL,effect10);
 
     // ExecuteShader(Shader1, def_play_time);
     // ExecuteShader(Shader2, def_play_time);
@@ -57,8 +60,8 @@ int main(int argc, char **argv)
     // ExecuteShader(Shader15, def_play_time);
     // ExecuteShader(Shader16, def_play_time);
 
-    // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptionPayload), NULL, 0, NULL);
-    // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(FileMessPayload), (PVOID)SystemDirectory, 0, NULL);
-    // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxPayload), NULL, 0, NULL);
+    // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(WindowsCorruptioneffect), NULL, 0, NULL);
+    // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(FileMesseffect), (PVOID)SystemDirectory, 0, NULL);
+    // CreateThread(NULL, 0, LPTHREAD_START_ROUTINE(MessageBoxeffect), NULL, 0, NULL);
     return 0;
 }

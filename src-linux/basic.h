@@ -13,3 +13,5 @@ extern int assert_fail(const char *file, const char *func, const int line, const
 #define assert(expr, ...) ((expr) ? 1 : assert_fail(__FILE__, __func__, __LINE__, #expr, "" __VA_ARGS__))
 
 ulong gettime();
+float gettimef();
+double gettimed();

@@ -50,6 +50,6 @@ end:
 pthread_t start_audio_thread(struct pcm_gen_data *data)
 {
     pthread_t t;
-    pthread_create(&t, NULL, audio_thread, data);
+    pthread_create(&t, NULL, (void *(*)(void *))audio_thread, data);
     return t;
 }
