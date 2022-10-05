@@ -24,7 +24,7 @@
 Display *display;
 int screen_id;
 Screen *screen;
-int screen_w, screen_h;
+int screen_w, screen_h, screen_size;
 XVisualInfo vinfo;
 XSetWindowAttributes window_attrs;
 Window window, root_window;
@@ -37,18 +37,26 @@ _tex_t tex[tex_num];
 uint gl_tex_to_window;
 uint gl_color_to_window;
 
+// 图像储存
 img_t img[img_num];
 
 // 还原gl状态
 void gl_reset()
 {
+    // 启用混合
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // 关闭(颜色混合的)逻辑操作
     glDisable(GL_COLOR_LOGIC_OP);
+    // 启用纹理
     glEnable(GL_TEXTURE_2D);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glBindTexture(GL_TEXTURE_2D, GL_TEXTURE0);
+    // 直接绘制到表面 (这样比较快)
     glDrawBuffer(GL_FRONT);
+    //
     glClearColor(0, 0, 0, 0);
+    // 重设变换矩阵
     glLoadIdentity();
     glOrtho(0, screen_w, screen_h, 0, 0, 1);
 }
@@ -56,12 +64,13 @@ void gl_reset()
 // 初始化显示
 void display_init()
 {
-    // 连接 x 服务器
+    // 连接 xserver
     assert(display = XOpenDisplay(NULL));
     screen_id = XDefaultScreen(display);
     assert(screen = ScreenOfDisplay(display, screen_id));
     screen_w = screen->width;
     screen_h = screen->height;
+    screen_size = screen_w * screen_h;
     root_window = DefaultRootWindow(display);
 
     assert(XMatchVisualInfo(display, screen_id, 32, TrueColor, &vinfo), "不支持真彩色");
@@ -95,9 +104,11 @@ void display_init()
     // 创建 opengl 上下文
     assert(glx_ctx = glXCreateContext(display, &vinfo, NULL, 1), "创建opengl上下文失败");
     assert(glXMakeCurrent(display, window, glx_ctx), "设置当前opengl上下文失败");
+
     // 创建纹理
     tex_gen(tex, tex_num);
-    //
+
+    // 设置参数
     gl_reset();
 
     // 预编译显示列表
@@ -127,15 +138,62 @@ void display_init()
     glEnd();
     glEndList();
 }
+// 去初始化显示
 void display_deinit()
 {
+    for (int i = 0; i < img_num; i++)
+        if (img[i])
+        {
+            img_free(img[i]);
+            img[i] = NULL;
+        }
+
+    // 删除显示列表
+    glDeleteLists(gl_tex_to_window, 2);
+
+    // 删除纹理
+    tex_del(tex, tex_num);
+
+    // 关闭 opengl
+    glXMakeCurrent(display, 0, NULL);
+    glXDestroyContext(display, glx_ctx);
+
+    // 关闭窗口
+    XDestroyWindow(display, window);
+
+    // 关闭 xserver 连接
+    XCloseDisplay(display);
+}
+
+// 图片操作
+void createimage(uint di, int w, int h)
+{
+    di = di % img_num;
+    if (img[di])
+        img_free(img[di]);
+    img[di] = img_new(img_format_RGBA, w, h);
+}
+void loadimage(uint di, char *path)
+{
+    di = di % img_num;
+    if (img[di])
+        img_free(img[di]);
+    img[di] = img_load(path);
+}
+void saveimage(uint si, char *path) { img_save_png(img[si % img_num], path); }
+void freeimage(uint di)
+{
+    di = di % img_num;
+    img_free(img[di]);
+    img[di] = NULL;
 }
 
 // 屏幕到图片
 void screen2image(uint di)
 {
+    di = di % img_num;
     if (img[di])
-        if (img[di]->w * img[di]->h * _img_format_size[img[di]->format] < screen_w * screen_h * 4)
+        if (img[di]->w * img[di]->h * _img_format_size[img[di]->format] < screen_size * 4)
         {
             img_free(img[di]);
             img[di] = NULL;
@@ -150,10 +208,10 @@ void screen2image(uint di)
         img[di] = img_new(img_format_BGRA, screen_w, screen_h);
 
     XShmGetImage(display, root_window, image, 0, 0, AllPlanes);
-    memcpy(img[di]->data, image->data, screen_w * screen_h * 4);
+    memcpy(img[di]->data, image->data, screen_size * 4);
 }
 
-// 复制屏幕到纹理
+// 屏幕到纹理
 void screen2texture(uint di)
 {
     // XUnmapWindow(display, window);

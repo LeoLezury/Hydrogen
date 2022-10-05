@@ -13,21 +13,27 @@ void *audio_thread(struct pcm_gen_data *data)
 
     snd_pcm_t *pcm_out;
     snd_pcm_open(&pcm_out, "default", SND_PCM_STREAM_PLAYBACK, 0);
-    snd_pcm_set_params(pcm_out, SND_PCM_FORMAT_S16, SND_PCM_ACCESS_RW_INTERLEAVED, 1, def_pcm_samplerate, 0, .5e6);
 
-    short buffer[def_buffer_len];
+    int buffer_len = def_pcm_buffer_len;
+    short buffer[buffer_len];
 
     pcm_gen_t func;
+    int rate, channel;
 play:
     for (int i = 0; func = data[i].func; i++)
     {
-        if (!(data[i].time > 0))
-            goto loop;
-        int samples = data[i].time * def_pcm_samplerate;
+        rate = data[i].rate > 0 ? data[i].rate : def_pcm_samplerate;
+        channel = data[i].channel > 0 ? data[i].channel : def_pcm_channels;
+        snd_pcm_set_params(pcm_out, SND_PCM_FORMAT_S16, SND_PCM_ACCESS_RW_INTERLEAVED, channel, rate, 0, .5e6);
 
-        for (int offset = 0; samples > 0; offset += def_buffer_len, samples -= def_buffer_len)
+        if (*(uint *)&data[i].time == 0x7f800000) // 如果是正无穷
+            goto loop;
+
+        int samples = (data[i].time > 0 ? data[i].time : def_play_time) * rate;
+
+        for (int offset = 0; samples > 0; offset += buffer_len, samples -= buffer_len)
         {
-            int len = samples > def_buffer_len ? def_buffer_len : samples;
+            int len = samples > buffer_len ? buffer_len : samples;
             func(buffer, offset, len);
             for (int nwrite = 0; nwrite < len;)
                 nwrite += snd_pcm_writei(pcm_out, buffer + nwrite, len - nwrite);
@@ -37,11 +43,11 @@ play:
     goto end;
 
 loop:
-    for (int offset = 0;; offset += def_buffer_len)
+    for (int offset = 0;; offset += buffer_len)
     {
-        func(buffer, offset, def_buffer_len);
-        for (int nwrite = 0; nwrite < def_buffer_len;)
-            nwrite += snd_pcm_writei(pcm_out, buffer + nwrite, def_buffer_len - nwrite);
+        func(buffer, offset, buffer_len);
+        for (int nwrite = 0; nwrite < buffer_len;)
+            nwrite += snd_pcm_writei(pcm_out, buffer + nwrite, buffer_len - nwrite);
     }
 
 end:

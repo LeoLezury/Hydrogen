@@ -4,13 +4,16 @@
 
 #include "basic.h"
 
+#define def_pcm_channels 1
 #define def_pcm_samplerate 8000
-#define def_buffer_len 4096
+#define def_pcm_buffer_len 4096
 
 typedef void (*pcm_gen_t)(short *, int, int);
 struct pcm_gen_data
 {
     pcm_gen_t func;
+    int channel; // 声道数
+    int rate;    // 采样率
     float time;
 };
 
